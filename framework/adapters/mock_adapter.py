@@ -6,7 +6,7 @@ Perfect for CI/CD pipelines and development.
 """
 
 from typing import List, Optional, Dict, Any
-from framework.core.hardware_abstraction import OperationResult
+from framework.core.types import OperationResult
 from framework.adapters.can_adapter import CANMessage
 import logging
 import time

@@ -5,26 +5,15 @@ Provides a unified interface to access different hardware components
 regardless of the underlying platform.
 """
 
-from typing import Optional, Dict, Any
-from dataclasses import dataclass
+from typing import Optional, Dict, Any, TYPE_CHECKING
 
 from framework.core.config_loader import ConfigLoader, HardwareConfig
-from framework.adapters.can_adapter import CANAdapter
-from framework.adapters.serial_adapter import SerialAdapter
-from framework.adapters.gpio_adapter import GPIOAdapter
-from framework.adapters.mock_adapter import MockCANAdapter, MockSerialAdapter, MockGPIOAdapter
+from framework.core.types import OperationResult
 
-
-@dataclass
-class OperationResult:
-    """Result of a hardware operation"""
-    success: bool
-    error: Optional[str] = None
-    data: Optional[Any] = None
-    log: str = ""
-    
-    def __bool__(self):
-        return self.success
+if TYPE_CHECKING:
+    from framework.adapters.can_adapter import CANAdapter
+    from framework.adapters.serial_adapter import SerialAdapter
+    from framework.adapters.gpio_adapter import GPIOAdapter
 
 
 class HardwareAbstractionLayer:
@@ -62,9 +51,9 @@ class HardwareAbstractionLayer:
         self.config: HardwareConfig = self.config_loader.load_hardware_config(platform)
         
         # Interface adapters
-        self._can: Optional[CANAdapter] = None
-        self._serial: Optional[SerialAdapter] = None
-        self._gpio: Optional[GPIOAdapter] = None
+        self._can = None
+        self._serial = None
+        self._gpio = None
         
         # Initialization state
         self._initialized = False
@@ -101,8 +90,11 @@ class HardwareAbstractionLayer:
     
     def _initialize_can(self):
         """Initialize CAN interface"""
+        from framework.adapters.can_adapter import CANAdapter
+        from framework.adapters.mock_adapter import MockCANAdapter
+
         can_config = self.config.interfaces['can']
-        
+
         # Select adapter based on type
         if can_config['type'] == 'mock':
             self._can = MockCANAdapter(can_config)
@@ -115,8 +107,11 @@ class HardwareAbstractionLayer:
     
     def _initialize_serial(self):
         """Initialize serial interface"""
+        from framework.adapters.serial_adapter import SerialAdapter
+        from framework.adapters.mock_adapter import MockSerialAdapter
+
         serial_config = self.config.interfaces['serial']
-        
+
         if serial_config['type'] == 'mock':
             self._serial = MockSerialAdapter(serial_config)
         else:
@@ -128,8 +123,11 @@ class HardwareAbstractionLayer:
     
     def _initialize_gpio(self):
         """Initialize GPIO interface"""
+        from framework.adapters.gpio_adapter import GPIOAdapter
+        from framework.adapters.mock_adapter import MockGPIOAdapter
+
         gpio_config = self.config.interfaces['gpio']
-        
+
         if gpio_config['type'] == 'mock':
             self._gpio = MockGPIOAdapter(gpio_config)
         else:
@@ -140,21 +138,21 @@ class HardwareAbstractionLayer:
             raise RuntimeError(f"GPIO initialization failed: {result.error}")
     
     @property
-    def can(self) -> CANAdapter:
+    def can(self) -> "CANAdapter":
         """Get CAN interface adapter"""
         if self._can is None:
             raise RuntimeError("CAN interface not initialized or not configured")
         return self._can
-    
+
     @property
-    def serial(self) -> SerialAdapter:
+    def serial(self) -> "SerialAdapter":
         """Get serial interface adapter"""
         if self._serial is None:
             raise RuntimeError("Serial interface not initialized or not configured")
         return self._serial
-    
+
     @property
-    def gpio(self) -> GPIOAdapter:
+    def gpio(self) -> "GPIOAdapter":
         """Get GPIO interface adapter"""
         if self._gpio is None:
             raise RuntimeError("GPIO interface not initialized or not configured")

@@ -29,7 +29,9 @@ def config_loader():
     Scope: session (created once per test run)
     """
     loader = ConfigLoader()
-    platform = loader.get_config_loader().get_platform_name() if hasattr(loader.get_config_loader(), '_platform_name') else None
+    # Load configuration using environment variable
+    hw_config = loader.load_hardware_config()
+    platform = loader.get_platform_name()
     
     yield loader
 

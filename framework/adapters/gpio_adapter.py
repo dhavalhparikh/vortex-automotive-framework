@@ -6,7 +6,7 @@ Note: Actual implementation depends on platform (RPi.GPIO, gpiod, etc.)
 """
 
 from typing import Optional, Dict, Any
-from framework.core.hardware_abstraction import OperationResult
+from framework.core.types import OperationResult
 import logging
 
 logger = logging.getLogger(__name__)

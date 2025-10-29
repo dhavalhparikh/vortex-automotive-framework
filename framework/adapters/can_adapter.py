@@ -8,7 +8,7 @@ Supports SocketCAN, PCAN, Vector, and other interfaces.
 import can
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
-from framework.core.hardware_abstraction import OperationResult
+from framework.core.types import OperationResult
 import logging
 
 logger = logging.getLogger(__name__)
