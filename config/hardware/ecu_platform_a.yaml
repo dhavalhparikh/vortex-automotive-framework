@@ -1,0 +1,183 @@
+# Hardware Configuration for ECU Platform A
+# This configuration defines hardware interfaces and parameters for testing
+
+platform:
+  name: "ECU Platform A"
+  version: "2.0"
+  vendor: "Automotive Corp"
+  description: "Primary ECU platform for vehicle control systems"
+
+# Hardware Interfaces
+interfaces:
+  # CAN Bus Configuration
+  can:
+    type: "socketcan"
+    channel: "can0"
+    bitrate: 500000
+    fd_enabled: false
+    data_bitrate: 2000000  # For CAN-FD
+    sample_point: 0.75
+    sjw: 1
+    
+  # Secondary CAN Bus (if applicable)
+  can1:
+    type: "socketcan"
+    channel: "can1"
+    bitrate: 250000
+    fd_enabled: false
+    
+  # Serial/UART Interface
+  serial:
+    type: "uart"
+    port: "/dev/ttyUSB0"
+    baudrate: 115200
+    bytesize: 8
+    parity: "N"
+    stopbits: 1
+    timeout: 1.0
+    xonxoff: false
+    rtscts: false
+    
+  # Ethernet Interface
+  ethernet:
+    type: "eth"
+    interface: "eth0"
+    ip_address: "192.168.1.100"
+    netmask: "255.255.255.0"
+    gateway: "192.168.1.1"
+    mac_address: "auto"
+    
+  # GPIO Configuration
+  gpio:
+    type: "linux_gpio"
+    chip: "/dev/gpiochip0"
+    pins:
+      ignition: 17
+      wakeup: 27
+      led_status: 22
+      reset: 23
+      power_enable: 24
+
+# Sensor Configuration
+sensors:
+  temperature:
+    type: "i2c"
+    bus: 1
+    address: 0x48
+    range: [-40, 125]
+    unit: "celsius"
+    accuracy: 0.5
+    
+  accelerometer:
+    type: "spi"
+    device: "/dev/spidev0.0"
+    max_speed: 1000000
+    mode: 3
+    axes: ["x", "y", "z"]
+    range: 16  # ±16g
+    resolution: 16  # 16-bit
+    
+  pressure:
+    type: "i2c"
+    bus: 1
+    address: 0x76
+    range: [300, 1100]  # hPa
+    unit: "hPa"
+
+# Diagnostic Protocol Configuration
+diagnostics:
+  protocol: "uds"
+  transport: "isotp"
+  
+  # ISO-TP Configuration
+  isotp:
+    tx_id: 0x7E0
+    rx_id: 0x7E8
+    extended: false
+    padding: true
+    frame_size: 8
+    
+  # UDS Configuration
+  uds:
+    p2_timeout: 1.0  # P2 timing (seconds)
+    p2_star_timeout: 5.0  # P2* timing (seconds)
+    suppress_positive_response: false
+    
+  # Supported Services (for validation)
+  supported_services:
+    - 0x10  # Diagnostic Session Control
+    - 0x11  # ECU Reset
+    - 0x14  # Clear Diagnostic Information
+    - 0x19  # Read DTC Information
+    - 0x22  # Read Data By Identifier
+    - 0x27  # Security Access
+    - 0x2E  # Write Data By Identifier
+    - 0x31  # Routine Control
+    - 0x3E  # Tester Present
+    
+# Test Parameters
+test_parameters:
+  # Timeouts (seconds)
+  default_timeout: 5.0
+  long_timeout: 30.0
+  boot_timeout: 60.0
+  
+  # Retry Configuration
+  retry_count: 3
+  retry_delay: 1.0
+  
+  # Logging
+  log_level: "INFO"
+  log_to_file: true
+  log_file_path: "/app/reports/hardware.log"
+  
+  # Performance Thresholds
+  max_message_latency: 0.1  # 100ms
+  min_throughput: 1000  # messages/second
+  
+  # Stability Tests
+  burn_in_duration: 300  # 5 minutes
+  stress_test_duration: 600  # 10 minutes
+
+# Power Configuration
+power:
+  nominal_voltage: 12.0
+  voltage_range: [9.0, 16.0]
+  max_current: 10.0  # Amps
+  
+  # Power state transitions
+  states:
+    - "OFF"
+    - "ACC"
+    - "ON"
+    - "START"
+    
+  startup_delay: 2.0  # Seconds to wait after power on
+
+# Calibration Data (example)
+calibration:
+  can_ids:
+    engine_rpm: 0x100
+    vehicle_speed: 0x101
+    coolant_temp: 0x102
+    throttle_pos: 0x103
+    
+  sensor_offsets:
+    temperature: 0.0
+    accelerometer_x: 0.0
+    accelerometer_y: 0.0
+    accelerometer_z: 0.0
+
+# Environment Constraints
+environment:
+  operating_temp_range: [-40, 85]  # Celsius
+  storage_temp_range: [-50, 125]
+  humidity_range: [5, 95]  # Percent
+  altitude_max: 5000  # Meters
+
+# Notes
+notes: |
+  Platform A configuration for ECU smoke testing.
+  - Ensure CAN interface is brought up: sudo ip link set can0 up type can bitrate 500000
+  - Serial port permissions: sudo chmod 666 /dev/ttyUSB0
+  - For GPIO access, user must be in 'gpio' group

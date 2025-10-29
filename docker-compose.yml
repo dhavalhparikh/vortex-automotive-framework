@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: automotive-tests
+    
+    # Hardware device access
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"  # Serial port
+      - "/dev/can0:/dev/can0"          # CAN interface
+      # Add more devices as needed:
+      # - "/dev/i2c-1:/dev/i2c-1"
+      # - "/dev/spidev0.0:/dev/spidev0.0"
+    
+    # Required capabilities for network interfaces
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    
+    # Use host network for CAN interfaces
+    network_mode: host
+    
+    # Environment variables
+    environment:
+      - HARDWARE_PLATFORM=${HARDWARE_PLATFORM:-ecu_platform_a}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PYTEST_ARGS=${PYTEST_ARGS:--m smoke}
+    
+    # Volume mounts
+    volumes:
+      - ./reports:/app/reports
+      - ./config:/app/config
+      # Mount for live code changes during development
+      - ./tests:/app/tests
+      - ./framework:/app/framework
+    
+    # Command override (use env var or default)
+    command: ${PYTEST_ARGS:--m smoke --alluredir=/app/reports/allure-results}
+
+  # Optional: Mock service for testing without hardware
+  mock-ecu:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock
+    container_name: mock-ecu
+    environment:
+      - MOCK_CAN_INTERFACE=vcan0
+    command: python -m framework.adapters.mock_adapter
+    profiles:
+      - mock  # Only start with: docker-compose --profile mock up
+
+# Usage examples:
+# docker-compose up                                    # Run smoke tests
+# docker-compose run test-runner -m can_bus           # Run CAN tests
+# docker-compose run test-runner tests/suites/can_bus # Run specific suite
+# HARDWARE_PLATFORM=ecu_platform_b docker-compose up  # Use different platform

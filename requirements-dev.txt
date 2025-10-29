@@ -1,0 +1,24 @@
+# Development dependencies
+-r requirements.txt
+
+# Code Quality
+black==23.12.1               # Code formatting
+flake8==7.0.0               # Linting
+pylint==3.0.3               # Advanced linting
+mypy==1.8.0                 # Type checking
+
+# Testing Utilities
+pytest-cov==4.1.0           # Coverage reporting
+pytest-mock==3.12.0         # Mocking utilities
+faker==22.0.0               # Test data generation
+
+# Documentation
+sphinx==7.2.6               # Documentation generation
+sphinx-rtd-theme==2.0.0     # Read the Docs theme
+
+# Debugging
+ipdb==0.13.13               # Interactive debugger
+pytest-pdb==0.3.1           # PDB integration
+
+# Allure Command Line (for local report viewing)
+# Note: Install allure CLI separately: https://docs.qameta.io/allure/#_installing_a_commandline

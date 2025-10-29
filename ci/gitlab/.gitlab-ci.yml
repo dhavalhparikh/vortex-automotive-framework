@@ -1,0 +1,130 @@
+# GitLab CI/CD Configuration for Automotive Test Framework
+
+variables:
+  DOCKER_IMAGE: automotive-tests
+  HARDWARE_PLATFORM: ecu_platform_a
+
+stages:
+  - build
+  - test
+  - report
+
+# Build Docker image
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker tag $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA $DOCKER_IMAGE:latest
+  only:
+    - branches
+    - tags
+
+# Run smoke tests
+test:smoke:
+  stage: test
+  image: $DOCKER_IMAGE:latest
+  variables:
+    HARDWARE_PLATFORM: mock_platform  # Use mock for CI/CD
+  script:
+    - pytest -m smoke 
+        --alluredir=reports/allure-results 
+        --junit-xml=reports/junit-smoke.xml
+  artifacts:
+    when: always
+    paths:
+      - reports/
+    reports:
+      junit: reports/junit-smoke.xml
+  only:
+    - branches
+    - merge_requests
+
+# Run regression tests
+test:regression:
+  stage: test
+  image: $DOCKER_IMAGE:latest
+  variables:
+    HARDWARE_PLATFORM: mock_platform
+  script:
+    - pytest -m regression 
+        --alluredir=reports/allure-results 
+        --junit-xml=reports/junit-regression.xml
+  artifacts:
+    when: always
+    paths:
+      - reports/
+    reports:
+      junit: reports/junit-regression.xml
+  only:
+    - main
+    - develop
+    - tags
+
+# Run CAN bus tests
+test:can_bus:
+  stage: test
+  image: $DOCKER_IMAGE:latest
+  variables:
+    HARDWARE_PLATFORM: mock_platform
+  script:
+    - pytest -m can_bus 
+        --alluredir=reports/allure-results 
+        --junit-xml=reports/junit-can.xml
+  artifacts:
+    when: always
+    paths:
+      - reports/
+    reports:
+      junit: reports/junit-can.xml
+  allow_failure: true
+
+# Generate Allure report
+report:allure:
+  stage: report
+  image: 
+    name: frankescobar/allure-docker-service
+    entrypoint: [""]
+  script:
+    - allure generate reports/allure-results -o reports/allure-report --clean
+  artifacts:
+    paths:
+      - reports/allure-report
+    expire_in: 30 days
+  dependencies:
+    - test:smoke
+    - test:regression
+  only:
+    - branches
+    - tags
+
+# Hardware test job (runs on specific runner with hardware access)
+test:hardware:
+  stage: test
+  tags:
+    - hardware-runner  # GitLab runner with hardware access
+  variables:
+    HARDWARE_PLATFORM: ecu_platform_a
+  script:
+    - docker run --rm 
+        --device=/dev/ttyUSB0:/dev/ttyUSB0 
+        --device=/dev/can0:/dev/can0 
+        --cap-add=NET_ADMIN
+        -e HARDWARE_PLATFORM=$HARDWARE_PLATFORM
+        -v $(pwd)/reports:/app/reports 
+        $DOCKER_IMAGE:latest 
+        -m "smoke and requires_hardware"
+        --alluredir=/app/reports/allure-results
+        --junit-xml=/app/reports/junit-hardware.xml
+  artifacts:
+    when: always
+    paths:
+      - reports/
+    reports:
+      junit: reports/junit-hardware.xml
+  only:
+    - main
+    - schedules
+  when: manual

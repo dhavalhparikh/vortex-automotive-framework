@@ -1,0 +1,149 @@
+// Jenkins Pipeline for Automotive Test Framework
+
+pipeline {
+    agent any
+    
+    environment {
+        // Hardware platform to test
+        HARDWARE_PLATFORM = "${params.PLATFORM ?: 'ecu_platform_a'}"
+        
+        // Docker image name
+        IMAGE_NAME = 'automotive-tests'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        
+        // Report paths
+        ALLURE_RESULTS = 'reports/allure-results'
+        JUNIT_RESULTS = 'reports/junit.xml'
+    }
+    
+    parameters {
+        choice(
+            name: 'PLATFORM',
+            choices: ['ecu_platform_a', 'ecu_platform_b', 'mock_platform'],
+            description: 'Hardware platform to test'
+        )
+        choice(
+            name: 'TEST_SUITE',
+            choices: ['smoke', 'regression', 'all'],
+            description: 'Test suite to run'
+        )
+        booleanParam(
+            name: 'PARALLEL',
+            defaultValue: false,
+            description: 'Run tests in parallel'
+        )
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                
+                script {
+                    // Get commit info
+                    env.GIT_COMMIT_SHORT = sh(
+                        script: "git rev-parse --short HEAD",
+                        returnStdout: true
+                    ).trim()
+                    env.GIT_COMMIT_MSG = sh(
+                        script: "git log -1 --pretty=%B",
+                        returnStdout: true
+                    ).trim()
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build test container
+                    sh """
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                script {
+                    // Determine test marker
+                    def testMarker = ''
+                    if (params.TEST_SUITE == 'smoke') {
+                        testMarker = '-m smoke'
+                    } else if (params.TEST_SUITE == 'regression') {
+                        testMarker = '-m regression'
+                    }
+                    
+                    // Build docker run command
+                    def dockerCmd = """
+                        docker run --rm \
+                            --device=/dev/ttyUSB0:/dev/ttyUSB0 \
+                            --device=/dev/can0:/dev/can0 \
+                            --cap-add=NET_ADMIN \
+                            -e HARDWARE_PLATFORM=${HARDWARE_PLATFORM} \
+                            -v \$(pwd)/reports:/app/reports \
+                            ${IMAGE_NAME}:${IMAGE_TAG} \
+                            ${testMarker} \
+                            --alluredir=/app/reports/allure-results \
+                            --junit-xml=/app/reports/junit.xml
+                    """
+                    
+                    if (params.PARALLEL) {
+                        dockerCmd += ' -n auto'
+                    }
+                    
+                    // Run tests (allow failures for reporting)
+                    sh(script: dockerCmd, returnStatus: true)
+                }
+            }
+        }
+        
+        stage('Publish Reports') {
+            steps {
+                // Publish JUnit test results
+                junit allowEmptyResults: true, testResults: "${JUNIT_RESULTS}"
+                
+                // Publish Allure report
+                allure([
+                    includeProperties: false,
+                    jdk: '',
+                    results: [[path: "${ALLURE_RESULTS}"]]
+                ])
+                
+                // Archive artifacts
+                archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Cleanup
+            sh """
+                docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
+            """
+        }
+        
+        success {
+            echo "✅ Tests passed successfully!"
+            
+            // Notify on success (add your notification here)
+            // emailext(...)
+            // slackSend(...)
+        }
+        
+        failure {
+            echo "❌ Tests failed!"
+            
+            // Notify on failure
+            // emailext(...)
+            // slackSend(...)
+        }
+        
+        unstable {
+            echo "⚠️  Tests are unstable!"
+        }
+    }
+}

@@ -1,0 +1,65 @@
+# Mock Hardware Configuration
+# For testing framework without actual hardware (CI/CD, development)
+
+platform:
+  name: "Mock ECU Platform"
+  version: "1.0"
+  vendor: "Test Environment"
+  description: "Simulated hardware for testing without physical devices"
+
+interfaces:
+  can:
+    type: "mock"
+    channel: "vcan0"  # Virtual CAN
+    bitrate: 500000
+    fd_enabled: false
+    
+  serial:
+    type: "mock"
+    port: "mock_serial"
+    baudrate: 115200
+    
+  ethernet:
+    type: "mock"
+    interface: "lo"
+    ip_address: "127.0.0.1"
+    
+  gpio:
+    type: "mock"
+    pins:
+      ignition: 1
+      wakeup: 2
+      led_status: 3
+
+sensors:
+  temperature:
+    type: "mock"
+    range: [-40, 125]
+    mock_value: 25.0
+    
+  accelerometer:
+    type: "mock"
+    axes: ["x", "y", "z"]
+    mock_values: [0.0, 0.0, 9.81]
+
+diagnostics:
+  protocol: "uds"
+  transport: "mock"
+  isotp:
+    tx_id: 0x7E0
+    rx_id: 0x7E8
+
+test_parameters:
+  default_timeout: 1.0  # Faster for mocks
+  retry_count: 1
+  log_level: "DEBUG"
+  simulate_delays: false  # No artificial delays
+
+power:
+  nominal_voltage: 12.0
+  voltage_range: [12.0, 12.0]
+
+notes: |
+  Mock configuration for testing without hardware.
+  All adapters return simulated data.
+  Perfect for CI/CD pipelines and development.

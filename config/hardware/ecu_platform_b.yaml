@@ -1,0 +1,75 @@
+# Hardware Configuration for ECU Platform B
+# Different ECU variant with different hardware capabilities
+
+platform:
+  name: "ECU Platform B"
+  version: "1.5"
+  vendor: "Automotive Corp"
+  description: "Secondary ECU platform for auxiliary systems"
+
+interfaces:
+  can:
+    type: "socketcan"
+    channel: "can0"
+    bitrate: 250000  # Different bitrate
+    fd_enabled: true  # CAN-FD supported
+    data_bitrate: 2000000
+    
+  serial:
+    type: "uart"
+    port: "/dev/ttyUSB1"  # Different port
+    baudrate: 9600  # Different baudrate
+    timeout: 2.0
+    
+  ethernet:
+    type: "eth"
+    interface: "eth0"
+    ip_address: "192.168.2.100"  # Different subnet
+    netmask: "255.255.255.0"
+    gateway: "192.168.2.1"
+    
+  gpio:
+    type: "linux_gpio"
+    chip: "/dev/gpiochip0"
+    pins:
+      power_led: 18
+      status_led: 25
+      button: 26
+
+sensors:
+  temperature:
+    type: "i2c"
+    bus: 1
+    address: 0x49  # Different address
+    range: [-20, 85]  # Different range
+    
+  light_sensor:
+    type: "i2c"
+    bus: 1
+    address: 0x23
+    range: [0, 65535]  # Lux
+
+diagnostics:
+  protocol: "uds"
+  transport: "isotp"
+  isotp:
+    tx_id: 0x7E1  # Different IDs
+    rx_id: 0x7E9
+    
+  supported_services:
+    - 0x10
+    - 0x22
+    - 0x3E
+
+test_parameters:
+  default_timeout: 10.0  # Longer timeout
+  retry_count: 5  # More retries
+  log_level: "DEBUG"  # More verbose logging
+
+power:
+  nominal_voltage: 12.0
+  voltage_range: [10.0, 15.0]  # Tighter range
+
+notes: |
+  Platform B configuration - auxiliary ECU with limited functionality.
+  Uses different CAN bitrate and addressing scheme.
