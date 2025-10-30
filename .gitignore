@@ -70,3 +70,9 @@ Thumbs.db
 test_data/output/
 *.pcap
 *.log
+
+# Exclude temporary documentation files
+PROJECT_NAMING.md
+PROJECT_SUMMARY.md
+TEST_RESULTS.md
+VALIDATION_REPORT.md
