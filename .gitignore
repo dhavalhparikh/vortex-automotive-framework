@@ -81,3 +81,6 @@ VALIDATION_REPORT.md
 HANDOFF_SUMMARY.md
 GETTING_STARTED.md
 validate_framework.py
+
+# Claude development guide (keep local only)
+CLAUDE.md
