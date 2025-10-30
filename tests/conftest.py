@@ -11,6 +11,7 @@ from pathlib import Path
 
 from framework.core.hardware_abstraction import HardwareAbstractionLayer
 from framework.core.config_loader import ConfigLoader
+from framework.core.test_registry import get_test_registry
 
 # Configure logging
 logging.basicConfig(
@@ -25,15 +26,31 @@ logger = logging.getLogger(__name__)
 def config_loader():
     """
     Provides ConfigLoader instance for the test session.
-    
+
     Scope: session (created once per test run)
     """
     loader = ConfigLoader()
     # Load configuration using environment variable
     hw_config = loader.load_hardware_config()
     platform = loader.get_platform_name()
-    
+
     yield loader
+
+
+@pytest.fixture(scope="session")
+def test_registry():
+    """
+    Provides TestRegistry instance for the test session.
+
+    Scope: session (created once per test run)
+    """
+    registry = get_test_registry()
+
+    logger.info(f"Loaded test registry with {len(registry._registry)} tests")
+    logger.info(f"Available categories: {registry.list_available_categories()}")
+    logger.info(f"Available suites: {registry.list_available_suites()}")
+
+    yield registry
 
 
 @pytest.fixture(scope="session")

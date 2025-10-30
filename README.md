@@ -1,17 +1,17 @@
-# Automotive Smoke Test Framework
+# VORTEX - Vehicle Operations Regression Testing EXecution
 
-A modular, containerized smoke test framework for automotive systems testing across different hardware configurations.
+A configuration-driven, containerized automotive test framework that simplifies test creation by removing decorator complexity from test code.
 
 ## Features
 
-- 🔧 **Modular Architecture**: Easy to add new test suites
+- 🔧 **Configuration-Driven**: All test metadata managed via YAML - no decorators in test code
 - 🐳 **Containerized**: Docker support with hardware device access
-- 📊 **Rich Reporting**: Allure reports with history, trends, and detailed logs
+- 📊 **HTML Reporting**: Clean pytest-html reports with detailed logs
 - 🚗 **Hardware Abstraction**: Support multiple ECU platforms via configuration
 - ⚡ **Parallel Execution**: Run tests in parallel with pytest-xdist
 - 🔗 **CI/CD Ready**: Jenkins, GitLab CI, GitHub Actions integration
-- 📝 **Dependency Management**: Control test execution order
-- 🎯 **Flexible Markers**: Organize tests by domain, priority, platform
+- 📝 **Dynamic Decorators**: Pytest and Allure decorators applied automatically from config
+- 🎯 **Smart Filtering**: Run tests by category, priority, platform, or suite
 
 ## Quick Start
 
@@ -32,11 +32,17 @@ docker run --rm \
   -v $(pwd)/reports:/app/reports \
   automotive-tests
 
-# Run specific test suite
+# Run specific category
 docker run --rm \
   --device=/dev/can0 \
   -v $(pwd)/reports:/app/reports \
-  automotive-tests -m can_bus
+  automotive-tests --category smoke
+
+# Run specific priority tests
+docker run --rm \
+  --device=/dev/can0 \
+  -v $(pwd)/reports:/app/reports \
+  automotive-tests --priority critical
 
 # Run with specific hardware configuration
 docker run --rm \
@@ -57,39 +63,43 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run all tests
-pytest
+python run_tests.py
 
-# Run specific markers
-pytest -m smoke
-pytest -m "can_bus and smoke"
+# Run by category/priority/suite
+python run_tests.py --category smoke
+python run_tests.py --priority critical
+python run_tests.py --suite can_bus
 
-# Run with Allure report
-pytest --alluredir=./reports/allure-results
-allure serve ./reports/allure-results
+# Run with HTML report
+python run_tests.py --report html
 
-# Run specific suite
+# Run specific test suite directly
 pytest tests/suites/can_bus/
 
 # Run with specific hardware config
-HARDWARE_PLATFORM=ecu_platform_a pytest
+HARDWARE_PLATFORM=ecu_platform_a python run_tests.py
 ```
 
 ## Project Structure
 
 ```
-automotive-test-framework/
+project_vortex/
 ├── config/
 │   ├── hardware/                    # Hardware platform configurations
 │   │   ├── ecu_platform_a.yaml
 │   │   ├── ecu_platform_b.yaml
 │   │   └── mock_platform.yaml
+│   ├── test_registry.yaml           # Test metadata configuration
 │   └── pytest.ini                   # Pytest configuration
 │
 ├── framework/
 │   ├── core/
 │   │   ├── hardware_abstraction.py  # HAL implementation
 │   │   ├── config_loader.py         # Configuration management
-│   │   └── test_context.py          # Shared test context
+│   │   ├── test_registry.py         # Test metadata management
+│   │   ├── test_decorators.py       # Dynamic decorator application
+│   │   ├── test_context.py          # Shared test context
+│   │   └── types.py                 # Shared type definitions
 │   ├── adapters/                    # Hardware interface adapters
 │   │   ├── can_adapter.py           # CAN bus communication
 │   │   ├── serial_adapter.py        # Serial/UART communication
@@ -117,38 +127,64 @@ automotive-test-framework/
 ├── docker-compose.yml
 ├── requirements.txt
 ├── run_tests.py                     # CLI test runner
+├── CLAUDE.md                        # Development guide
 └── README.md
 ```
 
-## Adding New Test Cases
+## Configuration-Driven Test Framework
 
-Create a new test file in the appropriate suite:
+VORTEX uses a revolutionary approach where test metadata is managed through configuration, not decorators in code.
+
+### Adding New Test Cases
+
+1. **Write clean test code** - Just add the `@auto_configure_test` decorator:
 
 ```python
 # tests/suites/can_bus/test_can_filters.py
 
-import pytest
-import allure
+from framework.core.test_decorators import auto_configure_test
 
-@allure.feature('CAN Bus')
-@allure.story('Message Filtering')
-class TestCANFilters:
-    
-    @pytest.mark.smoke
-    @pytest.mark.can_bus
-    @allure.title("Test CAN filter initialization")
-    def test_filter_initialization(self, hardware):
-        """Verify CAN filters can be configured"""
-        can = hardware.can
-        
-        with allure.step("Configure message filter for ID 0x100"):
-            result = can.add_filter(0x100)
-            assert result.success, f"Failed to add filter: {result.error}"
-        
-        with allure.step("Verify filter is active"):
-            filters = can.get_filters()
-            assert 0x100 in filters
+@auto_configure_test
+def test_can_filter_initialization(can_interface):
+    """Test CAN filter setup"""
+    result = can_interface.add_filter(0x100, 0x7FF)
+    assert result.success, f"Failed to add filter: {result.error}"
+
+@auto_configure_test
+def test_can_multiple_filters(can_interface):
+    """Test multiple CAN filters"""
+    # Initialize interface
+    init_result = can_interface.initialize()
+    assert init_result.success
+
+    # Add multiple filters
+    for filter_id in [0x100, 0x200, 0x300]:
+        result = can_interface.add_filter(filter_id, 0x7FF)
+        assert result.success
 ```
+
+2. **Configure test metadata** in `config/test_registry.yaml`:
+
+```yaml
+test_suites:
+  can_bus:
+    tests:
+      - name: "test_can_filter_initialization"
+        category: "smoke"
+        priority: "high"
+        platforms: ["all"]
+        description: "Test CAN filter setup and configuration"
+        requirements_hardware: false
+
+      - name: "test_can_multiple_filters"
+        category: "regression"
+        priority: "medium"
+        platforms: ["ecu_platform_a", "ecu_platform_b"]
+        description: "Test multiple CAN filter management"
+        requirements_hardware: true
+```
+
+That's it! No pytest markers, no allure decorators - everything is applied automatically from the configuration.
 
 ## Hardware Configuration
 
@@ -175,10 +211,36 @@ test_parameters:
   retry_count: 3
 ```
 
-Select platform:
+### Test Registry Configuration
+
+The `config/test_registry.yaml` file defines:
+
+- **Categories**: smoke, regression, integration, performance
+- **Priorities**: critical, high, medium, low
+- **Platforms**: all, ecu_platform_a, ecu_platform_b, mock_platform
+- **Suites**: can_bus, diagnostics, network, system
+
+### Running Specific Test Groups
+
 ```bash
+# Run by category
+python run_tests.py --category smoke
+python run_tests.py --category regression
+
+# Run by priority
+python run_tests.py --priority critical
+python run_tests.py --priority high
+
+# Run by suite
+python run_tests.py --suite can_bus
+python run_tests.py --suite diagnostics
+
+# Run with platform selection
 export HARDWARE_PLATFORM=ecu_platform_a
-pytest
+python run_tests.py
+
+# Combine filters
+python run_tests.py --category smoke --priority critical
 ```
 
 ## Documentation
