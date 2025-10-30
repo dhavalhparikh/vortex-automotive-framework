@@ -76,3 +76,8 @@ PROJECT_NAMING.md
 PROJECT_SUMMARY.md
 TEST_RESULTS.md
 VALIDATION_REPORT.md
+
+# Exclude validation and old documentation files
+HANDOFF_SUMMARY.md
+GETTING_STARTED.md
+validate_framework.py
