@@ -37,6 +37,15 @@ interfaces:
     speed: 1000000
     mode: 0
 
+  cli:
+    type: "mock"
+    connection_type: "serial"
+    device_path: "/dev/ttyUSB0"
+    baudrate: 115200
+    timeout: 5.0
+    command_timeout: 10.0
+    prompt_pattern: '[\$#>]\s*$'
+
 sensors:
   temperature:
     type: "mock"

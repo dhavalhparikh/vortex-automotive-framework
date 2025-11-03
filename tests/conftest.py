@@ -152,6 +152,19 @@ def gpio_interface(hardware):
     return hardware.gpio
 
 
+@pytest.fixture(scope="function")
+def cli_interface(hardware):
+    """
+    Provides CLI interface adapter.
+
+    Scope: function
+    """
+    if not hardware.has_interface('cli'):
+        pytest.skip("CLI interface not available in current configuration")
+
+    return hardware.cli_interface
+
+
 # Dynamic fixture support for auto-discovered adapters
 # This allows any {adapter_name}_interface to work automatically
 

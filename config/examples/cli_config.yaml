@@ -1,0 +1,154 @@
+# Cli Hardware Configuration Template
+#
+# This is a template for adding Cli interface configuration
+# to your hardware platform files.
+#
+# Usage:
+# 1. Copy the relevant sections to config/hardware/your_platform.yaml
+# 2. Replace {{PLACEHOLDER}} values with your actual configuration
+# 3. Add/remove parameters as needed for your specific hardware
+
+# Add this to your platform configuration file:
+# config/hardware/your_platform.yaml
+
+platform:
+  name: "Platform with Cli"  # e.g., "ECU Platform with Cli"
+  version: "1.0"
+
+interfaces:
+  # Add this cli interface section
+  cli:
+    # Required: Device path or connection string
+    device_path: "/dev/ttyUSB0"  # e.g., "/dev/cli0", "/dev/ttyCli0"
+
+    # TODO: Add your adapter-specific configuration parameters
+    # Examples (uncomment and modify as needed):
+
+    # Communication parameters
+    # baudrate: 115200
+    # timeout: 5.0
+    # retry_count: 3
+
+    # Hardware-specific settings
+    # mode: "master"  # or "slave"
+    # frequency: 1000000  # Hz
+    # voltage_level: 3.3  # V
+
+    # Protocol settings
+    # protocol_version: "v2.0"
+    # encryption: true
+    # compression: false
+
+    # Buffer settings
+    # buffer_size: 1024
+    # queue_size: 100
+
+# Optional: Add test parameters for this platform
+test_parameters:
+  default_timeout: 10.0  # Longer timeout for Cli operations
+  retry_count: 3
+  cli_specific:
+    # TODO: Add test parameters specific to Cli
+    # max_test_duration: 30.0
+    # test_data_size: 1024
+    # stress_test_iterations: 100
+
+# Add Cli tests to test registry:
+# config/test_registry.yaml
+
+# Add this section to test_suites in your test_registry.yaml:
+cli_tests:
+  description: "Cli interface tests"
+  platforms: ["all"]  # or specific platforms: ["your_platform", "ecu_platform_a"]
+  tests:
+    - name: "test_cli_initialization"
+      category: "smoke"
+      priority: "critical"
+      platforms: ["all"]
+      description: "Test Cli interface initialization"
+      requirements_hardware: false  # Set to true if requires real hardware
+
+    - name: "test_cli_cleanup"
+      category: "smoke"
+      priority: "high"
+      platforms: ["all"]
+      description: "Test Cli interface cleanup"
+      requirements_hardware: false
+
+    - name: "test_cli_send_data"
+      category: "regression"
+      priority: "high"
+      platforms: ["all"]
+      description: "Test sending data via Cli"
+      requirements_hardware: false
+
+    - name: "test_cli_receive_data"
+      category: "regression"
+      priority: "medium"
+      platforms: ["all"]
+      description: "Test receiving data from Cli"
+      requirements_hardware: false
+
+    - name: "test_cli_configuration"
+      category: "regression"
+      priority: "medium"
+      platforms: ["all"]
+      description: "Test Cli configuration"
+      requirements_hardware: false
+
+    - name: "test_cli_error_handling"
+      category: "regression"
+      priority: "medium"
+      platforms: ["all"]
+      description: "Test Cli error handling"
+      requirements_hardware: false
+
+    - name: "test_cli_stress_test"
+      category: "performance"
+      priority: "low"
+      platforms: ["all"]
+      description: "Stress test Cli interface"
+      requirements_hardware: false
+
+    - name: "test_cli_data_integrity"
+      category: "integration"
+      priority: "medium"
+      platforms: ["all"]
+      description: "Test data integrity through Cli"
+      requirements_hardware: false
+
+    # Hardware-specific tests (uncomment if needed)
+    # - name: "test_cli_hardware_specific_feature"
+    #   category: "integration"
+    #   priority: "medium"
+    #   platforms: ["your_platform"]  # Only run on real hardware
+    #   description: "Test hardware-specific Cli features"
+    #   requirements_hardware: true
+
+# Example complete platform configuration:
+---
+# Example: config/hardware/platform_with_cli.yaml
+platform:
+  name: "Development Platform with Cli"
+  version: "1.0"
+  vendor: "Your Company"
+
+interfaces:
+  can:
+    type: "socketcan"
+    channel: "can0"
+    bitrate: 500000
+
+  serial:
+    type: "uart"
+    port: "/dev/ttyUSB0"
+    baudrate: 115200
+
+  cli:
+    device_path: "/dev/ttyUSB0"
+    # Add your specific configuration here
+
+test_parameters:
+  default_timeout: 5.0
+  retry_count: 3
+  log_level: "INFO"

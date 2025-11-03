@@ -11,6 +11,7 @@ allure-pytest==2.13.2
 # Hardware Interface Libraries
 python-can==4.3.1            # CAN bus support (SocketCAN, Vector, PCAN)
 pyserial==3.5                # Serial/UART communication
+paramiko==3.4.0              # SSH communication for CLI adapter
 can-isotp==2.0.7             # ISO-TP for diagnostics
 
 # UDS/Diagnostics (optional - install if needed)
