@@ -1,6 +1,6 @@
 # VORTEX - Vehicle Operations Regression Testing EXecution
 
-A configuration-driven, containerized automotive test framework that simplifies test creation by removing decorator complexity from test code.
+A configuration-driven, containerized automotive test framework that simplifies test creation by separating test logic from metadata management.
 
 ## Features
 
@@ -10,8 +10,8 @@ A configuration-driven, containerized automotive test framework that simplifies 
 - 🚗 **Hardware Abstraction**: Support multiple ECU platforms via configuration
 - ⚡ **Parallel Execution**: Run tests in parallel with pytest-xdist
 - 🔗 **CI/CD Ready**: Jenkins, GitLab CI, GitHub Actions integration
-- 📝 **Dynamic Decorators**: Pytest and Allure decorators applied automatically from config
 - 🎯 **Smart Filtering**: Run tests by category, priority, platform, or suite
+- 🚀 **One-Command Adapters**: Generate production-ready adapters instantly
 
 ## Quick Start
 
@@ -22,17 +22,11 @@ A configuration-driven, containerized automotive test framework that simplifies 
 ### Running Tests with Docker (Recommended)
 
 ```bash
-# Build the container (includes all dependencies)
+# Build the container
 docker build -t automotive-tests .
 
-# Run all smoke tests (no hardware required - uses mock adapters)
+# Run smoke tests (no hardware required)
 docker run --rm \
-  -v $(pwd)/reports:/app/reports \
-  automotive-tests --category smoke
-
-# Run with mock platform (explicitly)
-docker run --rm \
-  -e HARDWARE_PLATFORM=mock_platform \
   -v $(pwd)/reports:/app/reports \
   automotive-tests --category smoke
 
@@ -49,151 +43,105 @@ docker run --rm \
   -v $(pwd)/reports:/app/reports \
   automotive-tests --priority critical
 
-# View reports after run
+# View reports
 cd reports && python3 -m http.server 8000
 # Open: http://localhost:8000/report.html
 ```
 
-### Local Development (Optional)
-
-**Note:** Docker is recommended to avoid installing dependencies on your system.
+### Local Development
 
 ```bash
-# Only if you want to develop locally without Docker:
-
-# Create and activate virtual environment
+# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
 
-# Install all Python dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# Install system dependencies (Linux)
-sudo apt-get install can-utils iproute2 i2c-tools
-
-# Run tests locally
+# Run tests
 python run_tests.py --category smoke
-python run_tests.py --priority critical
 python run_tests.py --suite can_bus
-
-# Run with specific hardware config
-HARDWARE_PLATFORM=mock_platform python run_tests.py
 ```
 
 ## Project Structure
 
 ```
 project_vortex/
-├── config/
-│   ├── hardware/                    # Hardware platform configurations
-│   │   ├── ecu_platform_a.yaml
-│   │   ├── ecu_platform_b.yaml
-│   │   └── mock_platform.yaml
-│   ├── test_registry.yaml           # Test metadata configuration
-│   └── pytest.ini                   # Pytest configuration
-│
-├── framework/
-│   ├── core/
-│   │   ├── hardware_abstraction.py  # HAL implementation
-│   │   ├── config_loader.py         # Configuration management
-│   │   ├── test_registry.py         # Test metadata management
-│   │   ├── test_decorators.py       # Dynamic decorator application
-│   │   ├── test_context.py          # Shared test context
-│   │   └── types.py                 # Shared type definitions
-│   ├── adapters/                    # Hardware interface adapters
-│   │   ├── can_adapter.py           # CAN bus communication
-│   │   ├── serial_adapter.py        # Serial/UART communication
-│   │   ├── gpio_adapter.py          # GPIO control
-│   │   └── mock_adapter.py          # Mock interfaces for testing
-│   └── utils/
-│       ├── logger.py                # Logging utilities
-│       └── helpers.py               # Helper functions
-│
-├── tests/
-│   ├── conftest.py                  # Pytest fixtures and configuration
-│   ├── suites/
-│   │   ├── can_bus/                 # CAN bus tests
-│   │   ├── diagnostics/             # UDS/diagnostic tests
-│   │   ├── network/                 # Network/Ethernet tests
-│   │   └── system/                  # System-level tests
-│
-├── ci/
-│   ├── jenkins/Jenkinsfile
-│   ├── gitlab/.gitlab-ci.yml
-│   └── github/workflow.yml
-│
+├── config/                          # Configuration files
+│   ├── hardware/                    # Hardware platform definitions
+│   └── test_registry.yaml           # Test metadata and organization
+├── framework/                       # Core framework
+│   ├── core/                        # Core components (HAL, config, decorators)
+│   ├── adapters/                    # Hardware adapters (CAN, serial, CLI, etc.)
+│   └── utils/                       # Utilities and helpers
+├── tests/                           # Test suites
+│   └── suites/                      # Organized test suites
+├── scripts/                         # Utility scripts
+├── docs/                            # Documentation
 ├── reports/                         # Generated test reports
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── run_tests.py                     # CLI test runner
-├── CLAUDE.md                        # Development guide
-└── README.md
+└── run_tests.py                     # Main test runner
 ```
 
-## Configuration-Driven Test Framework
+## Writing Tests
 
-VORTEX uses a revolutionary approach where test metadata is managed through configuration, not decorators in code.
-
-### Adding New Test Cases
-
-1. **Write clean test code** - Just add the `@auto_configure_test` decorator:
+VORTEX uses a configuration-driven approach where test metadata is managed externally:
 
 ```python
-# tests/suites/can_bus/test_can_filters.py
-
 from framework.core.test_decorators import auto_configure_test
 
 @auto_configure_test
-def test_can_filter_initialization(can_interface):
-    """Test CAN filter setup"""
-    result = can_interface.add_filter(0x100, 0x7FF)
-    assert result.success, f"Failed to add filter: {result.error}"
-
-@auto_configure_test
-def test_can_multiple_filters(can_interface):
-    """Test multiple CAN filters"""
-    # Initialize interface
-    init_result = can_interface.initialize()
-    assert init_result.success
-
-    # Add multiple filters
-    for filter_id in [0x100, 0x200, 0x300]:
-        result = can_interface.add_filter(filter_id, 0x7FF)
-        assert result.success
+def test_can_initialization(can_interface):
+    """Test CAN interface initialization"""
+    result = can_interface.initialize()
+    assert result.success, f"Failed: {result.error}"
 ```
 
-2. **Configure test metadata** in `config/test_registry.yaml`:
+Configure test metadata in `config/test_registry.yaml`:
 
 ```yaml
 test_suites:
   can_bus:
     tests:
-      - name: "test_can_filter_initialization"
+      - name: "test_can_initialization"
         category: "smoke"
-        priority: "high"
+        priority: "critical"
         platforms: ["all"]
-        description: "Test CAN filter setup and configuration"
-        requirements_hardware: false
-
-      - name: "test_can_multiple_filters"
-        category: "regression"
-        priority: "medium"
-        platforms: ["ecu_platform_a", "ecu_platform_b"]
-        description: "Test multiple CAN filter management"
-        requirements_hardware: true
 ```
 
-That's it! No pytest markers, no allure decorators - everything is applied automatically from the configuration.
+No pytest markers or decorators needed - everything applied automatically!
+
+## Adding New Adapters
+
+Generate production-ready adapters with one command:
+
+```bash
+# Generate CLI adapter for serial/SSH communication
+python scripts/create_adapter.py cli --device /dev/ttyUSB0 --methods "execute_command,send_ssh_command" --tests
+
+# Generates:
+# ✅ framework/adapters/cli_adapter.py (production-ready)
+# ✅ tests/suites/cli_tests/ (comprehensive test suite)
+# ✅ Updated config/test_registry.yaml (test metadata)
+# ✅ Mock adapter for CI/CD testing
+```
+
+The adapter is immediately available for use:
+
+```python
+@auto_configure_test
+def test_my_cli_feature(cli_interface):  # Auto-fixture!
+    result = cli_interface.execute_command("show version")
+    assert result.success
+```
 
 ## Hardware Configuration
 
 Define hardware platforms in YAML:
 
 ```yaml
-# config/hardware/ecu_platform_a.yaml
+# config/hardware/my_platform.yaml
 platform:
-  name: "ECU Platform A"
+  name: "My ECU Platform"
   version: "2.0"
 
 interfaces:
@@ -201,9 +149,10 @@ interfaces:
     type: "socketcan"
     channel: "can0"
     bitrate: 500000
-    
-  serial:
-    port: "/dev/ttyUSB0"
+
+  cli:
+    type: "serial"
+    device_path: "/dev/ttyUSB0"
     baudrate: 115200
 
 test_parameters:
@@ -211,228 +160,58 @@ test_parameters:
   retry_count: 3
 ```
 
-### Test Registry Configuration
+## Framework Architecture
 
-The `config/test_registry.yaml` file defines:
+```
+┌─────────────────────────────────────────────┐
+│                Test Layer                   │  ← Clean test functions
+├─────────────────────────────────────────────┤
+│              Test Registry                  │  ← YAML metadata
+├─────────────────────────────────────────────┤
+│           Hardware Abstraction             │  ← Auto-discovery
+├─────────────────────────────────────────────┤
+│               Adapters                      │  ← Hardware drivers
+├─────────────────────────────────────────────┤
+│            Hardware/Mock                    │  ← Real or simulated
+└─────────────────────────────────────────────┘
+```
 
-- **Categories**: smoke, regression, integration, performance
-- **Priorities**: critical, high, medium, low
-- **Platforms**: all, ecu_platform_a, ecu_platform_b, mock_platform
-- **Suites**: can_bus, diagnostics, network, system
-
-### Running Specific Test Groups
+## Running Tests
 
 ```bash
 # Run by category
 python run_tests.py --category smoke
-python run_tests.py --category regression
 
 # Run by priority
 python run_tests.py --priority critical
-python run_tests.py --priority high
 
-# Run by suite
+# Run specific suite
 python run_tests.py --suite can_bus
-python run_tests.py --suite diagnostics
 
-# Run with platform selection
+# Run with hardware platform
 export HARDWARE_PLATFORM=ecu_platform_a
-python run_tests.py
-
-# Combine filters
-python run_tests.py --category smoke --priority critical
+python run_tests.py --category regression
 ```
 
-## Adding Custom Dependencies
+## User Integration
 
-### Python Packages (pip-based)
+Users can easily integrate their own hardware and tests by following the template/example approach:
 
-**Add to requirements.txt:**
-```txt
-# Your custom packages
-your-company-diagnostic-lib==1.2.0
-automotive-tools>=2.0.0
+1. **Copy and modify** existing platform configs
+2. **Create custom adapters** using the generator
+3. **Add test suites** following existing patterns
+4. **Configure in YAML** without touching test code
 
-# From private PyPI
---extra-index-url https://your-company.com/pypi/simple/
-private-automotive-package==1.0.0
-
-# From Git repositories
-git+https://github.com/your-org/automotive-utils.git@v1.5.0
-```
-
-**Or add directly to Dockerfile:**
-```dockerfile
-# After the existing pip install line, add:
-RUN pip install --no-cache-dir \
-    your-diagnostic-tool==1.0.0 \
-    automotive-protocol-lib>=2.1.0
-```
-
-### System Dependencies (apt packages)
-
-**Add to Dockerfile:**
-```dockerfile
-# Add your system packages to the existing RUN command:
-RUN apt-get update && apt-get install -y \
-    can-utils \
-    iproute2 \
-    your-custom-package \      # Add here
-    libsomelib-dev \          # Add here
-    && rm -rf /var/lib/apt/lists/*
-```
-
-### Custom Binaries/Tools from URLs
-
-**Add to Dockerfile:**
-```dockerfile
-# Download and install custom tools
-RUN wget https://your-company.com/tools/diagnostic-tool-v1.2.tar.gz -O /tmp/tool.tar.gz && \
-    tar -xzf /tmp/tool.tar.gz -C /opt/ && \
-    ln -s /opt/diagnostic-tool-v1.2/bin/diag-tool /usr/local/bin/diag-tool && \
-    rm /tmp/tool.tar.gz
-
-# Or for .deb packages
-RUN wget https://releases.company.com/automotive-scanner_1.0_amd64.deb -O /tmp/scanner.deb && \
-    dpkg -i /tmp/scanner.deb || apt-get install -f -y && \
-    rm /tmp/scanner.deb
-```
-
-## Framework Architecture
-
-### Layer Overview
-
-```
-┌─────────────────────────────────────────────┐
-│                Test Layer                   │  ← Configuration-driven tests
-├─────────────────────────────────────────────┤
-│              Test Registry                  │  ← YAML-based test metadata
-├─────────────────────────────────────────────┤
-│           Hardware Abstraction             │  ← Unified hardware interface
-├─────────────────────────────────────────────┤
-│               Adapters                      │  ← Hardware-specific drivers
-├─────────────────────────────────────────────┤
-│            Hardware/Mock                    │  ← Real devices or simulation
-└─────────────────────────────────────────────┘
-```
-
-### **Test Layer**
-- **Purpose**: Clean, decorator-free test functions
-- **Key Feature**: Only needs `@auto_configure_test` decorator
-- **Location**: `tests/suites/`
-- **Example**: `test_can_initialization(can_interface)`
-
-### **Test Registry**
-- **Purpose**: Centralized metadata management via YAML
-- **Key Feature**: Dynamic decorator application at runtime
-- **Location**: `config/test_registry.yaml`
-- **Controls**: Categories, priorities, platforms, descriptions
-
-### **Hardware Abstraction Layer (HAL)**
-- **Purpose**: Unified interface to all hardware
-- **Key Feature**: Auto-discovery of adapters via `{name}_interface`
-- **Location**: `framework/core/hardware_abstraction.py`
-- **Usage**: `hardware.ethernet_interface` → auto-loads `EthernetAdapter`
-
-### **Adapters**
-- **Purpose**: Hardware-specific drivers and communication
-- **Key Feature**: Template-based creation, mock variants included
-- **Location**: `framework/adapters/`
-- **Pattern**: `{name}_adapter.py` with `{Name}Adapter` class
-
-### **Hardware/Mock Layer**
-- **Purpose**: Actual devices or simulation
-- **Key Feature**: Seamless switching between real/mock hardware
-- **Control**: `HARDWARE_PLATFORM` environment variable
-
-## Adding New Hardware Interfaces (Simplified!)
-
-### ✨ **New 3-Step Process** (was 5 steps):
-
-### 1. **Copy & Customize Template**
-```bash
-# Copy adapter template
-cp framework/templates/adapter_template.py framework/adapters/ethernet_adapter.py
-
-# Edit file - replace placeholders:
-# {{ADAPTER_NAME}} → Ethernet
-# {{ADAPTER_CLASS}} → EthernetAdapter
-# {{adapter_name}} → ethernet
-# {{DEVICE_PATH}} → /dev/eth0
-# Implement TODO methods
-```
-
-### 2. **Add Device Configuration**
-```yaml
-# config/hardware/your_platform.yaml
-interfaces:
-  ethernet:  # Framework auto-discovers this!
-    device_path: "/dev/eth0"
-    speed: "1000"
-```
-
-### 3. **Use in Tests**
-```python
-@auto_configure_test
-def test_ethernet_feature(ethernet_interface):  # Auto-fixture!
-    """Framework automatically provides ethernet_interface"""
-    result = ethernet_interface.initialize()
-    assert result.success
-
-    result = ethernet_interface.send_packet(b"test")
-    assert result.success
-```
-
-**That's it!** No HAL editing, no fixture creation - everything is auto-discovered.
-
-### 🔧 **Auto-Discovery Features**
-
-✅ **Adapter Discovery**: Place `*_adapter.py` in `framework/adapters/`
-✅ **Interface Access**: `hardware.{name}_interface` automatically works
-✅ **Test Fixtures**: `{name}_interface` parameters automatically provided
-✅ **Mock Support**: `Mock{Name}Adapter` classes automatically used on mock platform
-✅ **Configuration**: Standard YAML config in `config/hardware/`
-
-### 📚 **Templates Available**
-
-- **`framework/templates/adapter_template.py`** - Complete adapter implementation
-- **`framework/templates/test_template.py`** - Comprehensive test suite
-- **`framework/templates/config_template.yaml`** - Configuration examples
-- **`framework/templates/README.md`** - Detailed template usage guide
-
-## Extending Framework Core
-
-### Adding New Test Categories
-
-**Update `config/test_registry.yaml`:**
-```yaml
-categories:
-  your_category:
-    description: "Your custom test category"
-    max_duration: "15m"
-```
-
-### Adding New Platform Support
-
-**Create `config/hardware/your_new_platform.yaml`:**
-```yaml
-platform:
-  name: "Your New Platform"
-  version: "1.0"
-
-interfaces:
-  can:
-    type: "your_can_type"
-    custom_config: "value"
-```
+See the [Integration Guide](docs/integration.md) for detailed examples.
 
 ## Documentation
 
-For additional examples:
-- Check `tests/suites/` for test patterns
-- Review `config/test_registry.yaml` for configuration examples
-- Examine `config/hardware/` for platform configurations
-- See `framework/core/` for framework implementation details
+- **[Architecture](docs/architecture.md)** - Framework layers and auto-discovery
+- **[Adapters](docs/adapters.md)** - Creating and using hardware adapters
+- **[Configuration](docs/configuration.md)** - Hardware platforms and test registry
+- **[Testing](docs/testing.md)** - Writing and running tests
+- **[Integration](docs/integration.md)** - Adding your own hardware and tests
+- **[Scripts](docs/scripts.md)** - Available utility scripts
 
 ## License
 
