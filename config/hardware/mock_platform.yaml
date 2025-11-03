@@ -31,6 +31,12 @@ interfaces:
       wakeup: 2
       led_status: 3
 
+  spi:
+    type: "mock"
+    device_path: "/dev/spidev0.0"
+    speed: 1000000
+    mode: 0
+
 sensors:
   temperature:
     type: "mock"

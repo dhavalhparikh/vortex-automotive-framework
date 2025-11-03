@@ -143,13 +143,53 @@ def serial_interface(hardware):
 def gpio_interface(hardware):
     """
     Provides GPIO interface adapter.
-    
+
     Scope: function
     """
     if not hardware.has_interface('gpio'):
         pytest.skip("GPIO interface not available in current configuration")
-    
+
     return hardware.gpio
+
+
+# Dynamic fixture support for auto-discovered adapters
+# This allows any {adapter_name}_interface to work automatically
+
+import sys
+
+def __getattr__(name):
+    """
+    Dynamically create fixtures for {adapter_name}_interface patterns.
+
+    This module-level __getattr__ creates fixtures on-demand for any
+    adapter interface requested.
+    """
+    if name.endswith('_interface') and name not in ['can_interface', 'serial_interface', 'gpio_interface']:
+        adapter_name = name[:-10]  # Remove '_interface' suffix
+
+        @pytest.fixture(scope="function")
+        def dynamic_interface_fixture(hardware):
+            try:
+                # Use auto-discovery to get the adapter
+                return getattr(hardware, f"{adapter_name}_interface")
+            except RuntimeError as e:
+                pytest.skip(f"{adapter_name} interface not available: {e}")
+
+        dynamic_interface_fixture.__name__ = name
+        dynamic_interface_fixture.__doc__ = f"""
+        Provides {adapter_name} interface adapter (auto-generated).
+
+        This fixture is automatically created for any {adapter_name}_interface
+        parameter in test functions.
+
+        Scope: function
+        """
+
+        # Add to module globals so it can be found
+        globals()[name] = dynamic_interface_fixture
+        return dynamic_interface_fixture
+
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 @pytest.fixture
