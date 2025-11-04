@@ -56,6 +56,8 @@ class TestParameters(BaseModel):
 
 class HardwareConfig(BaseModel):
     """Complete hardware configuration"""
+    model_config = ConfigDict(extra="allow")
+
     platform: PlatformConfig
     interfaces: Dict[str, Dict[str, Any]]
     sensors: Optional[Dict[str, Dict[str, Any]]] = None
@@ -65,9 +67,6 @@ class HardwareConfig(BaseModel):
     calibration: Optional[Dict[str, Any]] = None
     environment: Optional[Dict[str, Any]] = None
     notes: str = ""
-    
-    class Config:
-        extra = "allow"
 
 
 class ConfigLoader:
