@@ -262,7 +262,8 @@ class CANAdapter:
             if self.bus and hasattr(self.bus, 'get_stats'):
                 stats = self.bus.get_stats()
                 return stats.get('error_count', 0)
-        except:
+        except (AttributeError, RuntimeError, OSError) as e:
+            logger.debug(f"Could not get CAN error count: {e}")
             pass
         return 0
     

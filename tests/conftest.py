@@ -241,26 +241,27 @@ def pytest_runtest_setup(item):
     Called before each test runs.
     """
     # Check platform-specific markers
-    platform_markers = [mark for mark in item.iter_markers() 
+    platform_markers = [mark for mark in item.iter_markers()
                        if mark.name.startswith('platform_')]
-    
+
     if platform_markers:
         # Get current platform
         from framework.core.config_loader import get_config_loader
         loader = get_config_loader()
-        
+
         try:
             current_platform = loader.get_platform_name()
-            
+
             # Check if test should run on this platform
+            # Test should run if it has the current platform marker OR all_platforms marker
             should_run = any(
-                marker.name == f"platform_{current_platform.split('_')[-1]}"
+                marker.name == f"platform_{current_platform}" or marker.name == "all_platforms"
                 for marker in platform_markers
             )
-            
+
             if not should_run:
                 pytest.skip(f"Test not applicable for platform: {current_platform}")
-        
+
         except RuntimeError:
             # No platform loaded yet
             pass

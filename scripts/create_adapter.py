@@ -207,7 +207,7 @@ class AdapterGenerator:
         test_dir = self.tests_dir / f"{names['adapter_name']}_tests"
         test_dir.mkdir(exist_ok=True)
 
-        template_path = self.templates_dir / "test_template.py"
+        template_path = self.templates_dir / "adapter_test_template.py"
         output_path = test_dir / f"test_{names['adapter_name']}.py"
 
         # Read template

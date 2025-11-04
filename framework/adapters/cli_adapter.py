@@ -116,7 +116,13 @@ class CliAdapter:
         """Initialize SSH connection"""
         try:
             self._ssh_client = paramiko.SSHClient()
-            self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            # Load system host keys, warn if unknown hosts
+            self._ssh_client.load_system_host_keys()
+            if self.config.get('ssh_allow_unknown_hosts', False):
+                logger.warning("SSH configured to accept unknown host keys - potential security risk")
+                self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            else:
+                self._ssh_client.set_missing_host_key_policy(paramiko.RejectPolicy())
 
             # Connect with password or key
             if self.ssh_key_path:
@@ -127,7 +133,7 @@ class CliAdapter:
                     key_filename=self.ssh_key_path,
                     timeout=self.timeout
                 )
-            else:
+            elif self.ssh_password:
                 self._ssh_client.connect(
                     hostname=self.ssh_host,
                     port=self.ssh_port,
@@ -135,6 +141,8 @@ class CliAdapter:
                     password=self.ssh_password,
                     timeout=self.timeout
                 )
+            else:
+                raise ValueError("SSH connection requires either ssh_key_path or ssh_password")
 
             # Create interactive shell
             self._ssh_shell = self._ssh_client.invoke_shell()

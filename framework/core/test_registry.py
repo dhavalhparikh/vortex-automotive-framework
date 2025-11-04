@@ -119,9 +119,15 @@ class TestRegistry:
         markers = [
             metadata.category,
             metadata.suite,
-            metadata.priority,
-            f"platform_{metadata.platforms[0]}" if len(metadata.platforms) == 1 and metadata.platforms[0] != "all" else "all_platforms"
+            metadata.priority
         ]
+
+        # Add platform markers for all specified platforms
+        if "all" in metadata.platforms:
+            markers.append("all_platforms")
+        else:
+            for platform in metadata.platforms:
+                markers.append(f"platform_{platform}")
 
         if metadata.requirements_hardware:
             markers.append("requires_hardware")

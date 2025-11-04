@@ -47,7 +47,7 @@ def auto_configure_test(func: Callable) -> Callable:
             wrapper = getattr(pytest.mark, marker)(wrapper)
         else:
             # Create custom marker if it doesn't exist
-            wrapper = pytest.mark.mark(marker)(wrapper)
+            wrapper = getattr(pytest.mark, marker)(wrapper)
 
     # Apply allure decorators dynamically
     allure_labels = registry.get_allure_labels(test_name)

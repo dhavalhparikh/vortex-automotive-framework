@@ -131,9 +131,17 @@ class ConfigLoader:
             )
         
         # Load YAML file
-        with open(config_file, 'r') as f:
-            config_data = yaml.safe_load(f)
-        
+        try:
+            with open(config_file, 'r') as f:
+                config_data = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise ValueError(f"Invalid YAML syntax in {config_file}: {e}")
+        except IOError as e:
+            raise FileNotFoundError(f"Could not read configuration file {config_file}: {e}")
+
+        if config_data is None:
+            raise ValueError(f"Configuration file {config_file} is empty or contains only comments")
+
         # Validate and create config object
         try:
             self._current_config = HardwareConfig(**config_data)

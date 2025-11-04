@@ -1,14 +1,8 @@
 """
-Cli Test Template
+CLI Adapter Tests
 
-This is a template for creating tests for new hardware adapters.
-Replace all {{PLACEHOLDER}} values with your specific test implementation.
-
-Usage:
-1. Copy this file to tests/suites/cli/test_cli.py
-2. Replace all {{PLACEHOLDER}} values
-3. Add test metadata to config/test_registry.yaml
-4. Implement your specific test logic
+Tests for CLI adapter functionality including serial and SSH connections.
+Validates command execution, response capture, and error handling.
 """
 
 from framework.core.test_decorators import auto_configure_test
@@ -51,15 +45,16 @@ class TestCliAdapter:
         init_result = cli_interface.initialize()
         assert init_result.success
 
-        # TODO: Replace with your specific test data
-        test_data = "test_cli_data"
+        # Test CLI command execution
+        test_command = "echo 'test_command'"
 
-        # Send data
-        result = cli_interface.send_data(test_data)
-        assert result.success, f"Failed to send data: {result.error}"
+        # Execute command
+        result = cli_interface.execute_command(test_command)
+        assert result.success, f"Failed to execute command: {result.error}"
 
-        # TODO: Add specific assertions for your adapter
-        # Example: verify data format, response time, etc.
+        # Verify response contains expected output
+        if result.data:
+            assert "test_command" in result.data, "Command output not found in response"
 
     @auto_configure_test
     def test_cli_receive_data(self, cli_interface):
@@ -88,15 +83,15 @@ class TestCliAdapter:
         init_result = cli_interface.initialize()
         assert init_result.success
 
-        # TODO: Replace with your adapter-specific configuration
+        # Test CLI-specific configuration
         test_config = {
-            'parameter1': 'value1',
-            'parameter2': 123
+            'timeout': 10.0,
+            'prompt_pattern': r'[$#>]\s*$'
         }
 
         # Configure adapter
         result = cli_interface.configure(**test_config)
-        assert result.success, f"Failed to configure Cli: {result.error}"
+        assert result.success, f"Failed to configure CLI: {result.error}"
 
     @auto_configure_test
     def test_cli_error_handling(self, cli_interface):
