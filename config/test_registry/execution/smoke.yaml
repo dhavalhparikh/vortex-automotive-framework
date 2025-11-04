@@ -1,0 +1,34 @@
+execution_profile:
+  name: smoke
+  description: Critical smoke tests for fast feedback
+  timeout: 300
+include:
+- suite: can_bus
+  tests:
+  - test_can_initialization
+  - test_can_cleanup
+  - test_send_can_message
+  overrides:
+    timeout: 60
+    priority: critical
+- suite: spi_test
+  tests:
+  - test_spi_auto_discovery
+  overrides:
+    timeout: 60
+    priority: critical
+- suite: cli_tests
+  tests:
+  - test_cli_adapter_initialization
+  - test_cli_execute_command
+  - test_cli_cleanup
+  overrides:
+    timeout: 60
+    priority: critical
+- suite: mock_adapter
+  tests:
+  - test_mock_adapter_can_loopback
+  - test_mock_adapter_serial_loopback
+  overrides:
+    timeout: 60
+    priority: critical

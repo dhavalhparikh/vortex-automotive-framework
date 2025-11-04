@@ -1,0 +1,20 @@
+suite_info:
+  name: diagnostics
+  description: UDS and diagnostic protocol tests
+  default_platforms:
+  - ecu_platform_a
+  - ecu_platform_b
+tests:
+- name: test_uds_session_control
+  category: smoke
+  priority: high
+  description: Test UDS session control
+  platforms:
+  - ecu_platform_a
+  - ecu_platform_b
+- name: test_dtc_reading
+  category: regression
+  priority: medium
+  description: Test diagnostic trouble code reading
+  platforms:
+  - all

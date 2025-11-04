@@ -10,7 +10,8 @@ A configuration-driven, containerized automotive test framework that simplifies 
 - 🚗 **Hardware Abstraction**: Support multiple ECU platforms via configuration
 - ⚡ **Parallel Execution**: Run tests in parallel with pytest-xdist
 - 🔗 **CI/CD Ready**: Jenkins, GitLab CI, GitHub Actions integration
-- 🎯 **Smart Filtering**: Run tests by category, priority, platform, or suite
+- 🎯 **Smart Filtering**: Run tests by category, priority, platform, suite, or execution profile
+- 📋 **Execution Profiles**: Predefined test configurations for different scenarios (smoke, hil, nightly)
 - 🚀 **One-Command Adapters**: Generate production-ready adapters instantly
 
 ## Quick Start
@@ -25,10 +26,10 @@ A configuration-driven, containerized automotive test framework that simplifies 
 # Build the container
 docker build -t automotive-tests .
 
-# Run smoke tests (no hardware required)
+# Run smoke tests using execution profile (no hardware required)
 docker run --rm \
   -v $(pwd)/reports:/app/reports \
-  automotive-tests --category smoke
+  automotive-tests --exec-profile smoke
 
 # Run specific test suite
 docker run --rm \
@@ -52,11 +53,11 @@ cd reports && python3 -m http.server 8000
 
 ```bash
 # Auto-discovers hardware devices from platform config - no manual --device mapping!
-./auto_test.sh my_platform -m smoke
-./auto_test.sh custom_cli_platform tests/suites/cli_tests/
+./auto_test.sh my_platform --exec-profile smoke
+./auto_test.sh custom_cli_platform --exec-profile hil
 
 # Advanced Docker usage
-python scripts/auto_docker.py run --platform my_platform -m smoke
+python scripts/auto_docker.py run --platform my_platform --exec-profile smoke
 python scripts/auto_docker.py compose --platform my_platform && docker-compose up
 ```
 
@@ -71,8 +72,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run tests locally (requires hardware setup)
-python run_tests.py --category smoke
-python run_tests.py --suite can_bus
+python run_tests.py --exec-profile smoke
+python run_tests.py --exec-profile hil --platform ecu_platform_a
 ```
 
 ## Project Structure
@@ -81,7 +82,11 @@ python run_tests.py --suite can_bus
 project_vortex/
 ├── config/                          # Configuration files
 │   ├── hardware/                    # Hardware platform definitions
-│   └── test_registry.yaml           # Test metadata and organization
+│   ├── test_registry/               # Split test registry structure
+│   │   ├── suites/                  # Test definitions by functionality
+│   │   ├── execution/               # Execution profiles (smoke, hil, nightly)
+│   │   └── _globals.yaml            # Shared configuration
+│   └── test_registry.yaml           # Legacy test registry (if not migrated)
 ├── framework/                       # Core framework
 │   ├── core/                        # Core components (HAL, config, decorators)
 │   ├── adapters/                    # Hardware adapters (CAN, serial, CLI, etc.)
@@ -108,16 +113,30 @@ def test_can_initialization(can_interface):
     assert result.success, f"Failed: {result.error}"
 ```
 
-Configure test metadata in `config/test_registry.yaml`:
+Configure test metadata in `config/test_registry/suites/can_bus.yaml`:
 
 ```yaml
-test_suites:
-  can_bus:
-    tests:
-      - name: "test_can_initialization"
-        category: "smoke"
-        priority: "critical"
-        platforms: ["all"]
+suite_info:
+  name: "can_bus"
+  description: "CAN bus communication tests"
+
+tests:
+  - name: "test_can_initialization"
+    category: "smoke"
+    priority: "critical"
+    platforms: ["all"]
+```
+
+Create execution profiles in `config/test_registry/execution/smoke.yaml`:
+
+```yaml
+execution_profile:
+  name: "smoke"
+  description: "Critical smoke tests for fast feedback"
+
+include:
+  - suite: "can_bus"
+    tests: ["test_can_initialization"]
 ```
 
 No pytest markers or decorators needed - everything applied automatically!
@@ -190,6 +209,28 @@ test_parameters:
 
 ## Running Tests
 
+### Using Execution Profiles (Recommended)
+
+```bash
+# List available execution profiles
+python run_tests.py --list-profiles
+
+# Run execution profiles for different scenarios
+python run_tests.py --exec-profile smoke      # Fast smoke tests
+python run_tests.py --exec-profile hil        # Hardware-in-the-loop tests
+python run_tests.py --exec-profile nightly    # Comprehensive nightly run
+python run_tests.py --exec-profile regression # Full regression suite
+
+# Run profile with specific platform
+python run_tests.py --exec-profile hil --platform ecu_platform_a
+
+# Filter tests within profiles
+python run_tests.py --exec-profile smoke --suite can_bus
+python run_tests.py --exec-profile regression --priority critical
+```
+
+### Traditional Usage (Still Supported)
+
 ```bash
 # Run by category
 python run_tests.py --category smoke
@@ -221,6 +262,7 @@ See the [Integration Guide](docs/integration.md) for detailed examples.
 - **[Architecture](docs/architecture.md)** - Framework layers and auto-discovery
 - **[Adapters](docs/adapters.md)** - Creating and using hardware adapters
 - **[Configuration](docs/configuration.md)** - Hardware platforms and test registry
+- **[Execution Profiles](docs/execution_profiles.md)** - Organizing tests for different scenarios
 - **[Testing](docs/testing.md)** - Writing and running tests
 - **[Integration](docs/integration.md)** - Adding your own hardware and tests
 - **[Scripts](docs/scripts.md)** - Available utility scripts

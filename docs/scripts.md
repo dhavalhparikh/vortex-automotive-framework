@@ -10,51 +10,57 @@ The main test execution script with comprehensive filtering and platform support
 
 #### Basic Usage
 ```bash
-# Run all smoke tests
-python run_tests.py --category smoke
+# Using Execution Profiles (Recommended)
+python run_tests.py --exec-profile smoke      # Run smoke tests
+python run_tests.py --exec-profile hil        # Run HIL tests
+python run_tests.py --exec-profile nightly    # Run nightly tests
+python run_tests.py --exec-profile regression # Run regression tests
 
-# Run critical priority tests
-python run_tests.py --priority critical
+# List available execution profiles
+python run_tests.py --list-profiles
 
-# Run specific test suite
-python run_tests.py --suite can_bus
-
-# Run specific test file
-python run_tests.py tests/suites/can_bus/test_can.py
-
-# Run specific test function
-python run_tests.py tests/suites/can_bus/test_can.py::test_can_initialization
+# Traditional Usage (Still Supported)
+python run_tests.py --category smoke          # Run all smoke tests
+python run_tests.py --priority critical       # Run critical priority tests
+python run_tests.py --suite can_bus           # Run specific test suite
+python run_tests.py tests/suites/can_bus/test_can.py  # Run specific test file
 ```
 
 #### Filtering Options
 ```bash
-# Multiple filters (AND logic)
+# Execution Profile Filtering
+python run_tests.py --exec-profile smoke --suite can_bus
+python run_tests.py --exec-profile regression --priority critical
+python run_tests.py --exec-profile hil --platform ecu_platform_a
+
+# Traditional Filtering (AND logic)
 python run_tests.py --category smoke --priority critical
 
 # Platform-specific tests
 export HARDWARE_PLATFORM=ecu_platform_a
-python run_tests.py --suite diagnostics
+python run_tests.py --exec-profile hil
 
 # Mock platform testing
 export HARDWARE_PLATFORM=mock_platform
-python run_tests.py --category regression
+python run_tests.py --exec-profile smoke
 ```
 
 #### Execution Options
 ```bash
-# Parallel execution
-python run_tests.py --category smoke -n auto  # Auto-detect CPU cores
-python run_tests.py --category regression -n 4  # Use 4 workers
+# Parallel execution with execution profiles
+python run_tests.py --exec-profile smoke -n auto      # Auto-detect CPU cores
+python run_tests.py --exec-profile regression -n 4    # Use 4 workers
 
 # Verbose output
-python run_tests.py --category smoke -v
-python run_tests.py --category smoke -vv  # Extra verbose
+python run_tests.py --exec-profile smoke -v
+python run_tests.py --exec-profile smoke -vv          # Extra verbose
 
 # Stop on first failure
-python run_tests.py --category smoke -x
+python run_tests.py --exec-profile smoke -x
 
-# Show local variables in tracebacks
-python run_tests.py --category smoke -l
+# Traditional execution options
+python run_tests.py --category smoke -n auto
+python run_tests.py --category smoke -l               # Show local variables
 ```
 
 #### Output Options
@@ -73,6 +79,9 @@ python run_tests.py --category smoke --json-report results.json
 ```bash
 # Show all available options
 python run_tests.py --help
+
+# List available execution profiles
+python run_tests.py --list-profiles
 
 # List available test suites
 python run_tests.py --list-suites
@@ -136,7 +145,8 @@ python scripts/create_adapter.py can_fd \
 framework/adapters/my_device_adapter.py          # Main adapter
 tests/suites/my_device_tests/                    # Test directory
 tests/suites/my_device_tests/test_my_device_comprehensive.py  # Tests
-config/test_registry.yaml                        # Updated with test metadata
+config/test_registry/suites/my_device_tests.yaml # Updated test suite (split structure)
+# OR config/test_registry.yaml                   # Updated registry (legacy structure)
 ```
 
 ## Development Scripts
@@ -152,8 +162,11 @@ python scripts/validate_config.py
 # Validate specific config
 python scripts/validate_config.py --config config/hardware/my_platform.yaml
 
-# Validate test registry
+# Validate test registry (split or legacy)
 python scripts/validate_config.py --test-registry
+
+# Validate execution profiles
+python scripts/validate_config.py --execution-profiles
 
 # Check for missing test functions
 python scripts/validate_config.py --check-tests
@@ -258,17 +271,19 @@ python scripts/docker_build.py --push --registry my-registry.com
 Simplified Docker test execution with proper device mounting.
 
 ```bash
-# Run smoke tests in Docker
-python scripts/docker_run.py --category smoke
+# Run execution profiles in Docker
+python scripts/docker_run.py --exec-profile smoke
+python scripts/docker_run.py --exec-profile hil --devices /dev/can0,/dev/ttyUSB0
 
-# Run with hardware devices
+# Traditional usage
+python scripts/docker_run.py --category smoke
 python scripts/docker_run.py --category regression --devices /dev/can0,/dev/ttyUSB0
 
 # Run with custom platform
-python scripts/docker_run.py --platform my_platform --suite my_tests
+python scripts/docker_run.py --platform my_platform --exec-profile smoke
 
 # Run with environment variables
-python scripts/docker_run.py --env VORTEX_LOG_LEVEL=DEBUG --category smoke
+python scripts/docker_run.py --env VORTEX_LOG_LEVEL=DEBUG --exec-profile smoke
 ```
 
 ## CI/CD Scripts
@@ -278,10 +293,14 @@ python scripts/docker_run.py --env VORTEX_LOG_LEVEL=DEBUG --category smoke
 Specialized script for CI/CD environments with proper exit codes and reporting.
 
 ```bash
-# Run CI tests (always uses mock platform)
-python scripts/ci_test.py
+# Run CI tests using execution profiles (recommended)
+python scripts/ci_test.py --exec-profile smoke
+python scripts/ci_test.py --exec-profile regression
 
-# Run specific test categories for CI
+# Run multiple execution profiles
+python scripts/ci_test.py --exec-profiles smoke,regression
+
+# Traditional usage
 python scripts/ci_test.py --categories smoke,regression
 
 # Run with custom timeouts
@@ -388,6 +407,10 @@ export VORTEX_TEST_TIMEOUT=60
 
 # Parallel workers
 export VORTEX_WORKERS=4
+
+# Execution profile selection (set by CLI)
+export VORTEX_EXECUTION_PROFILE=smoke
+export VORTEX_FILTERED_TESTS=test_can_initialization,test_send_can_message
 ```
 
 ### Configuration Files

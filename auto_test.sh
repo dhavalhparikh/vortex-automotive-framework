@@ -6,7 +6,9 @@
 # No more manual --device mappings!
 #
 # Usage:
-#     ./auto_test.sh my_platform -m smoke
+#     ./auto_test.sh my_platform --exec-profile smoke
+#     ./auto_test.sh my_platform --exec-profile hil
+#     ./auto_test.sh my_platform -m smoke  # Traditional usage
 #     ./auto_test.sh my_platform tests/suites/cli_tests/
 #     ./auto_test.sh my_platform --collect-only
 #
@@ -28,8 +30,10 @@ if [ $# -eq 0 ]; then
     ls config/hardware/*.yaml | xargs -n1 basename -s .yaml | sed 's/^/  /'
     echo ""
     echo "Examples:"
-    echo "  $0 mock_platform -m smoke"
-    echo "  $0 --rebuild custom_cli_platform tests/suites/cli_tests/"
+    echo "  $0 mock_platform --exec-profile smoke"
+    echo "  $0 mock_platform --exec-profile hil"
+    echo "  $0 mock_platform -m smoke  # Traditional usage"
+    echo "  $0 --rebuild custom_cli_platform --exec-profile smoke"
     exit 1
 fi
 

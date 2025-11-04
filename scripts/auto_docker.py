@@ -6,7 +6,8 @@ Analyzes platform configuration and automatically maps required hardware devices
 to Docker containers. No more manual --device mappings!
 
 Usage:
-    python scripts/auto_docker.py run --platform my_platform -m smoke
+    python scripts/auto_docker.py run --platform my_platform --exec-profile smoke
+    python scripts/auto_docker.py run --platform my_platform -m smoke  # Traditional
     python scripts/auto_docker.py compose --platform my_platform
 """
 
@@ -234,7 +235,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    # Run tests with automatic device mapping
+    # Run tests with execution profiles (recommended)
+    python scripts/auto_docker.py run --platform my_custom_platform --exec-profile smoke
+    python scripts/auto_docker.py run --platform my_custom_platform --exec-profile hil
+
+    # Traditional usage
     python scripts/auto_docker.py run --platform my_custom_platform -m smoke
 
     # Generate docker-compose override file

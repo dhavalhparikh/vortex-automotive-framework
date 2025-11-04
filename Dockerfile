@@ -31,6 +31,6 @@ ENV PYTHONUNBUFFERED=1
 # Create reports directory
 RUN mkdir -p /app/reports/allure-results
 
-# Default command runs all smoke tests
+# Default command runs smoke execution profile
 ENTRYPOINT ["python", "run_tests.py"]
-CMD ["-m", "smoke"]
+CMD ["--exec-profile", "smoke"]

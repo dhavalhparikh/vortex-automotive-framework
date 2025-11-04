@@ -50,27 +50,53 @@ def test_multiple_interfaces(can_interface, serial_interface, cli_interface):
 
 ### Adding Test Metadata
 
-Configure test metadata in `config/test_registry.yaml`:
+Configure test metadata in suite files under `config/test_registry/suites/`:
 
 ```yaml
-test_suites:
-  my_test_suite:
-    description: "My custom test suite"
-    platforms: ["all"]  # or specific platforms
-    tests:
-      - name: "test_my_functionality"
-        category: "smoke"
-        priority: "critical"
-        description: "Test my custom functionality"
-        platforms: ["all"]
-        requirements_hardware: false
+# config/test_registry/suites/my_test_suite.yaml
+suite_info:
+  name: "my_test_suite"
+  description: "My custom test suite"
+  default_platforms: ["all"]
 
-      - name: "test_hardware_specific"
-        category: "regression"
-        priority: "high"
-        description: "Test requiring real hardware"
-        platforms: ["ecu_platform_a", "ecu_platform_b"]
-        requirements_hardware: true
+tests:
+  - name: "test_my_functionality"
+    category: "smoke"
+    priority: "critical"
+    description: "Test my custom functionality"
+    platforms: ["all"]
+    requirements_hardware: false
+
+  - name: "test_hardware_specific"
+    category: "regression"
+    priority: "high"
+    description: "Test requiring real hardware"
+    platforms: ["ecu_platform_a", "ecu_platform_b"]
+    requirements_hardware: true
+```
+
+### Creating Execution Profiles
+
+Organize tests for different scenarios using execution profiles:
+
+```yaml
+# config/test_registry/execution/my_profile.yaml
+execution_profile:
+  name: "my_profile"
+  description: "Custom test execution profile"
+  timeout: 300
+
+include:
+  # Include entire suite
+  - suite: "my_test_suite"
+
+  # Include specific tests with overrides
+  - suite: "can_bus"
+    tests: ["test_can_initialization"]
+    overrides:
+      timeout: 60
+      platforms: ["mock_platform"]
+      priority: "critical"
 ```
 
 ### Test Categories
@@ -89,7 +115,27 @@ test_suites:
 
 ## Running Tests
 
-### Basic Test Execution
+### Using Execution Profiles (Recommended)
+
+```bash
+# List available execution profiles
+python run_tests.py --list-profiles
+
+# Run predefined execution profiles
+python run_tests.py --exec-profile smoke      # Fast smoke tests
+python run_tests.py --exec-profile hil        # Hardware-in-the-loop tests
+python run_tests.py --exec-profile nightly    # Comprehensive nightly run
+python run_tests.py --exec-profile regression # Full regression suite
+
+# Run profile with specific platform
+python run_tests.py --exec-profile hil --platform ecu_platform_a
+
+# Filter tests within execution profile
+python run_tests.py --exec-profile smoke --suite can_bus
+python run_tests.py --exec-profile regression --priority critical
+```
+
+### Traditional Test Execution (Still Supported)
 
 ```bash
 # Run all smoke tests
@@ -123,23 +169,32 @@ python run_tests.py --category smoke
 # Build container
 docker build -t automotive-tests .
 
-# Run smoke tests (mock platform)
+# Run smoke tests using execution profile
+docker run --rm -v $(pwd)/reports:/app/reports automotive-tests --exec-profile smoke
+
+# Run HIL tests with specific platform
+docker run --rm -e HARDWARE_PLATFORM=ecu_platform_a -v $(pwd)/reports:/app/reports automotive-tests --exec-profile hil
+
+# Auto device mapping (recommended)
+./auto_test.sh my_platform --exec-profile smoke
+./auto_test.sh ecu_platform_a --exec-profile hil
+
+# Traditional usage still supported
 docker run --rm -v $(pwd)/reports:/app/reports automotive-tests --category smoke
-
-# Run with specific platform
-docker run --rm -e HARDWARE_PLATFORM=mock_platform -v $(pwd)/reports:/app/reports automotive-tests --suite cli_tests
-
-# Run with hardware access
 docker run --rm --device=/dev/can0 --device=/dev/ttyUSB0 -e HARDWARE_PLATFORM=ecu_platform_a -v $(pwd)/reports:/app/reports automotive-tests
 ```
 
 ### Parallel Execution
 
 ```bash
-# Run tests in parallel (pytest-xdist)
-python run_tests.py --category smoke -n auto
+# Run execution profile in parallel (pytest-xdist)
+python run_tests.py --exec-profile smoke -n auto
 
 # Specify number of workers
+python run_tests.py --exec-profile regression -n 4
+
+# Traditional parallel execution
+python run_tests.py --category smoke -n auto
 python run_tests.py --category regression -n 4
 ```
 
@@ -276,16 +331,23 @@ python3 -m http.server 8000 -d reports/
 - Error details and stack traces
 - Platform and environment information
 - Hardware configuration details
+- Execution profile information (when used)
 
 ### CI/CD Integration
 
 ```yaml
-# GitHub Actions example
-- name: Run Tests
+# GitHub Actions example with execution profiles
+- name: Run Smoke Tests
   run: |
     docker run --rm -e HARDWARE_PLATFORM=mock_platform \
       -v ${{ github.workspace }}/reports:/app/reports \
-      automotive-tests --category smoke
+      automotive-tests --exec-profile smoke
+
+- name: Run Regression Tests
+  run: |
+    docker run --rm -e HARDWARE_PLATFORM=mock_platform \
+      -v ${{ github.workspace }}/reports:/app/reports \
+      automotive-tests --exec-profile regression
 
 - name: Upload Test Reports
   uses: actions/upload-artifact@v3
@@ -317,9 +379,10 @@ python3 -m http.server 8000 -d reports/
 
 ### Performance
 
-1. **Parallel Execution**: Use `-n auto` for parallel test execution
-2. **Mock for Speed**: Use mock platform for rapid feedback
-3. **Selective Testing**: Run specific categories/priorities as needed
+1. **Execution Profiles**: Use profiles for organized test execution
+2. **Parallel Execution**: Use `-n auto` for parallel test execution
+3. **Mock for Speed**: Use mock platform for rapid feedback
+4. **Selective Testing**: Run specific categories/priorities as needed
 
 ## Troubleshooting
 
@@ -340,6 +403,7 @@ python3 -m http.server 8000 -d reports/
 - Use mock platform for testing framework logic
 
 **Configuration Errors**:
-- Validate YAML syntax
-- Check test registry entries
+- Validate YAML syntax in suite and execution profile files
+- Check test registry entries in `config/test_registry/`
 - Verify platform selection
+- Ensure execution profile exists: `python run_tests.py --list-profiles`

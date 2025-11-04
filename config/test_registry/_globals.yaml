@@ -1,0 +1,49 @@
+categories:
+  smoke:
+    description: Critical tests that must pass
+    max_duration: 5m
+  regression:
+    description: Comprehensive test suite
+    max_duration: 30m
+  integration:
+    description: Cross-component integration tests
+    max_duration: 15m
+  performance:
+    description: Performance and load tests
+    max_duration: 60m
+priorities:
+  critical:
+    description: Must-pass tests
+    weight: 100
+  high:
+    description: Important tests
+    weight: 80
+  medium:
+    description: Standard tests
+    weight: 60
+  low:
+    description: Nice-to-have tests
+    weight: 40
+defaults:
+  platforms:
+  - all
+  category: regression
+  priority: medium
+  requirements_hardware: false
+  max_duration: null
+validation:
+  required_fields:
+  - name
+  - category
+  - priority
+  - description
+  valid_categories:
+  - smoke
+  - regression
+  - integration
+  - performance
+  valid_priorities:
+  - critical
+  - high
+  - medium
+  - low

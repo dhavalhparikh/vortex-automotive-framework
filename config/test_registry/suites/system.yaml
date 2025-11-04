@@ -1,0 +1,21 @@
+suite_info:
+  name: system
+  description: System-level integration tests
+  default_platforms:
+  - all
+tests:
+- name: test_boot_sequence
+  category: smoke
+  priority: critical
+  description: Test ECU boot sequence
+  platforms:
+  - ecu_platform_a
+  - ecu_platform_b
+  requirements_hardware: true
+- name: test_power_management
+  category: regression
+  priority: high
+  description: Test power state transitions
+  platforms:
+  - ecu_platform_a
+  - ecu_platform_b

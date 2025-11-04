@@ -1,0 +1,18 @@
+suite_info:
+  name: mock_adapter
+  description: Mock adapter tests
+  default_platforms:
+  - mock_platform
+tests:
+- name: test_mock_adapter_can_loopback
+  category: regression
+  priority: low
+  description: Test mock adapter CAN loopback
+  platforms:
+  - mock_platform
+- name: test_mock_adapter_serial_loopback
+  category: regression
+  priority: low
+  description: Test mock adapter Serial loopback
+  platforms:
+  - mock_platform

@@ -177,5 +177,18 @@ def get_test_registry() -> RegistryManager:
     """Get global test registry instance"""
     global _registry_instance
     if _registry_instance is None:
-        _registry_instance = RegistryManager()
+        # Try to use split registry first, fall back to legacy
+        try:
+            from framework.core.split_registry import get_split_registry
+            split_registry = get_split_registry()
+            # Check if split registry has data
+            if split_registry.get_available_suites():
+                logger.info("Using split registry structure")
+                _registry_instance = split_registry
+            else:
+                logger.info("Split registry empty, using legacy registry")
+                _registry_instance = RegistryManager()
+        except Exception as e:
+            logger.warning(f"Failed to load split registry, using legacy: {e}")
+            _registry_instance = RegistryManager()
     return _registry_instance

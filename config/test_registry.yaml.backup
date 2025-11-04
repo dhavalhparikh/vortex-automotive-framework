@@ -1,0 +1,236 @@
+# Test Registry Configuration
+# Maps test functions to their metadata without cluttering test code
+
+test_suites:
+  can_bus:
+    description: "CAN bus communication tests"
+    platforms: ["ecu_platform_a", "ecu_platform_b", "mock_platform"]
+    tests:
+      - name: "test_can_initialization"
+        category: "smoke"
+        priority: "critical"
+        description: "Test CAN interface initialization"
+        platforms: ["all"]
+
+      - name: "test_can_cleanup"
+        category: "smoke"
+        priority: "critical"
+        description: "Test CAN interface cleanup"
+        platforms: ["all"]
+
+      - name: "test_send_can_message"
+        category: "smoke"
+        priority: "critical"
+        description: "Test sending CAN messages"
+        platforms: ["all"]
+
+      - name: "test_receive_can_message"
+        category: "regression"
+        priority: "high"
+        description: "Test receiving CAN messages"
+        platforms: ["ecu_platform_a", "ecu_platform_b"]
+        requirements_hardware: true
+
+      - name: "test_add_filter"
+        category: "regression"
+        priority: "medium"
+        description: "Test CAN message filtering"
+        platforms: ["all"]
+  
+  mock_adapter:
+    description: "Mock adapter tests"
+    platforms: ["mock_platform"]
+    tests:
+      - name: "test_mock_adapter_can_loopback"
+        category: "regression"
+        priority: "low"
+        description: "Test mock adapter CAN loopback"
+        platforms: ["mock_platform"]
+
+      - name: "test_mock_adapter_serial_loopback"
+        category: "regression"
+        priority: "low"
+        description: "Test mock adapter Serial loopback"
+        platforms: ["mock_platform"]
+
+  spi_test:
+    description: "SPI adapter auto-discovery tests"
+    platforms: ["mock_platform"]
+    tests:
+      - name: "test_spi_auto_discovery"
+        category: "smoke"
+        priority: "critical"
+        platforms: ["mock_platform"]
+        description: "Test SPI adapter auto-discovery and basic functionality"
+        requirements_hardware: false
+
+      - name: "test_spi_adapter_type_detection"
+        category: "integration"
+        priority: "high"
+        platforms: ["mock_platform"]
+        description: "Test automatic mock adapter selection"
+        requirements_hardware: false
+
+      - name: "test_spi_configuration_loading"
+        category: "regression"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test SPI configuration loading from YAML"
+        requirements_hardware: false
+
+      - name: "test_adapter_info_and_discovery"
+        category: "regression"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test HAL adapter discovery features"
+        requirements_hardware: false
+
+  cli_tests:
+    description: "CLI adapter tests for command execution and output comparison"
+    platforms: ["mock_platform"]
+    tests:
+      - name: "test_cli_adapter_initialization"
+        category: "smoke"
+        priority: "critical"
+        platforms: ["mock_platform"]
+        description: "Test CLI adapter initialization"
+        requirements_hardware: false
+
+      - name: "test_cli_execute_command"
+        category: "smoke"
+        priority: "high"
+        platforms: ["mock_platform"]
+        description: "Test basic CLI command execution"
+        requirements_hardware: false
+
+      - name: "test_cli_mock_response_setting"
+        category: "regression"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test custom mock response configuration"
+        requirements_hardware: false
+
+      - name: "test_cli_output_comparison"
+        category: "integration"
+        priority: "high"
+        platforms: ["mock_platform"]
+        description: "Test output comparison functionality"
+        requirements_hardware: false
+
+      - name: "test_cli_output_comparison_options"
+        category: "regression"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test output comparison with different options"
+        requirements_hardware: false
+
+      - name: "test_cli_ssh_command_execution"
+        category: "integration"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test SSH command execution"
+        requirements_hardware: false
+
+      - name: "test_cli_command_history"
+        category: "regression"
+        priority: "low"
+        platforms: ["mock_platform"]
+        description: "Test command history tracking"
+        requirements_hardware: false
+
+      - name: "test_cli_output_capture"
+        category: "regression"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test output capture functionality"
+        requirements_hardware: false
+
+      - name: "test_cli_buffer_management"
+        category: "regression"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test output buffer management"
+        requirements_hardware: false
+
+      - name: "test_cli_error_handling"
+        category: "regression"
+        priority: "medium"
+        platforms: ["mock_platform"]
+        description: "Test CLI error handling"
+        requirements_hardware: false
+
+      - name: "test_cli_cleanup"
+        category: "smoke"
+        priority: "high"
+        platforms: ["mock_platform"]
+        description: "Test CLI interface cleanup"
+        requirements_hardware: false
+
+  diagnostics:
+    description: "UDS and diagnostic protocol tests"
+    platforms: ["ecu_platform_a", "ecu_platform_b"]
+    tests:
+      - name: "test_uds_session_control"
+        category: "smoke"
+        priority: "high"
+        description: "Test UDS session control"
+        platforms: ["ecu_platform_a", "ecu_platform_b"]
+
+      - name: "test_dtc_reading"
+        category: "regression"
+        priority: "medium"
+        description: "Test diagnostic trouble code reading"
+        platforms: ["all"]
+
+  system:
+    description: "System-level integration tests"
+    platforms: ["all"]
+    tests:
+      - name: "test_boot_sequence"
+        category: "smoke"
+        priority: "critical"
+        description: "Test ECU boot sequence"
+        platforms: ["ecu_platform_a", "ecu_platform_b"]
+        requirements_hardware: true
+
+      - name: "test_power_management"
+        category: "regression"
+        priority: "high"
+        description: "Test power state transitions"
+        platforms: ["ecu_platform_a", "ecu_platform_b"]
+
+# Test Categories
+categories:
+  smoke:
+    description: "Critical tests that must pass"
+    max_duration: "5m"
+
+  regression:
+    description: "Comprehensive test suite"
+    max_duration: "30m"
+
+  integration:
+    description: "Cross-component integration tests"
+    max_duration: "15m"
+
+  performance:
+    description: "Performance and load tests"
+    max_duration: "60m"
+
+# Priority Levels
+priorities:
+  critical:
+    description: "Must-pass tests"
+    weight: 100
+
+  high:
+    description: "Important tests"
+    weight: 80
+
+  medium:
+    description: "Standard tests"
+    weight: 60
+
+  low:
+    description: "Nice-to-have tests"
+    weight: 40

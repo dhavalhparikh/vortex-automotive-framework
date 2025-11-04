@@ -1,0 +1,83 @@
+suite_info:
+  name: cli_tests
+  description: CLI adapter tests for command execution and output comparison
+  default_platforms:
+  - mock_platform
+tests:
+- name: test_cli_adapter_initialization
+  category: smoke
+  priority: critical
+  platforms:
+  - mock_platform
+  description: Test CLI adapter initialization
+  requirements_hardware: false
+- name: test_cli_execute_command
+  category: smoke
+  priority: high
+  platforms:
+  - mock_platform
+  description: Test basic CLI command execution
+  requirements_hardware: false
+- name: test_cli_mock_response_setting
+  category: regression
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test custom mock response configuration
+  requirements_hardware: false
+- name: test_cli_output_comparison
+  category: integration
+  priority: high
+  platforms:
+  - mock_platform
+  description: Test output comparison functionality
+  requirements_hardware: false
+- name: test_cli_output_comparison_options
+  category: regression
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test output comparison with different options
+  requirements_hardware: false
+- name: test_cli_ssh_command_execution
+  category: integration
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test SSH command execution
+  requirements_hardware: false
+- name: test_cli_command_history
+  category: regression
+  priority: low
+  platforms:
+  - mock_platform
+  description: Test command history tracking
+  requirements_hardware: false
+- name: test_cli_output_capture
+  category: regression
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test output capture functionality
+  requirements_hardware: false
+- name: test_cli_buffer_management
+  category: regression
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test output buffer management
+  requirements_hardware: false
+- name: test_cli_error_handling
+  category: regression
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test CLI error handling
+  requirements_hardware: false
+- name: test_cli_cleanup
+  category: smoke
+  priority: high
+  platforms:
+  - mock_platform
+  description: Test CLI interface cleanup
+  requirements_hardware: false

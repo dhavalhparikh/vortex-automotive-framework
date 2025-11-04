@@ -218,15 +218,56 @@ def pytest_configure(config):
     Pytest configuration hook.
     Called before test collection.
     """
+    import os
+
     # Add custom markers (also defined in pytest.ini)
     config.addinivalue_line("markers", "smoke: Critical smoke tests")
     config.addinivalue_line("markers", "can_bus: CAN bus tests")
     config.addinivalue_line("markers", "diagnostics: Diagnostic tests")
-    
+
     # Log test configuration
     logger.info("=" * 70)
     logger.info("Automotive Test Framework - Test Session Starting")
     logger.info("=" * 70)
+
+    # Dynamically register markers from test registry to prevent warnings
+    try:
+        registry = get_test_registry()
+
+        # Check if we're using an execution profile
+        exec_profile = os.getenv('VORTEX_EXECUTION_PROFILE')
+        if exec_profile:
+            logger.info(f"Using execution profile: {exec_profile}")
+            # Get registry with execution profile applied
+            if hasattr(registry, 'get_execution_registry'):
+                profile_registry = registry.get_execution_registry(exec_profile)
+                test_metadata_values = profile_registry.values()
+            else:
+                # Fallback for legacy registry
+                test_metadata_values = registry._registry.values()
+        else:
+            # Use base registry
+            if hasattr(registry, '_base_registry'):
+                test_metadata_values = registry._base_registry.values()
+            else:
+                test_metadata_values = registry._registry.values()
+
+        # Get all unique markers from tests
+        all_markers = set()
+        for test_metadata in test_metadata_values:
+            test_markers = registry.get_pytest_markers(test_metadata.name, exec_profile)
+            all_markers.update(test_markers)
+
+        # Register all discovered markers
+        for marker in all_markers:
+            config.addinivalue_line(
+                "markers",
+                f"{marker}: Dynamically registered marker from test registry"
+            )
+
+    except Exception as e:
+        # Don't break pytest if registry loading fails
+        logger.warning(f"Failed to register dynamic markers: {e}")
 
 
 def pytest_collection_finish(session):
@@ -274,7 +315,7 @@ def pytest_runtest_makereport(item, call):
     """
     outcome = yield
     report = outcome.get_result()
-    
+
     # Add failure information to Allure
     if report.when == "call" and report.failed:
         # Get failure details
@@ -286,29 +327,18 @@ def pytest_runtest_makereport(item, call):
             )
 
 
-def pytest_configure(config):
+def pytest_collection_modifyitems(config, items):
     """
-    Dynamically register markers from test registry to prevent warnings
+    Filter tests based on execution profile
     """
-    try:
-        registry = get_test_registry()
+    import os
 
-        # Get all unique markers from all tests
-        all_markers = set()
-        for test_metadata in registry._registry.values():
-            test_markers = registry.get_pytest_markers(test_metadata.name)
-            all_markers.update(test_markers)
-
-        # Register all discovered markers
-        for marker in all_markers:
-            config.addinivalue_line(
-                "markers",
-                f"{marker}: Dynamically registered marker from test registry"
-            )
-
-    except Exception as e:
-        # Don't break pytest if registry loading fails
-        logger.warning(f"Failed to register dynamic markers: {e}")
+    filtered_tests = os.getenv('VORTEX_FILTERED_TESTS')
+    if filtered_tests:
+        allowed_test_names = set(filtered_tests.split(','))
+        # Filter items to only include tests from execution profile
+        items[:] = [item for item in items if item.name in allowed_test_names]
+        logger.info(f"Filtered tests by execution profile: {len(items)} tests selected")
 
 
 def pytest_sessionfinish(session, exitstatus):

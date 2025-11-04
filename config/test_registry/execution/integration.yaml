@@ -1,0 +1,12 @@
+execution_profile:
+  name: integration
+  description: Integration and cross-component tests
+  timeout: 900
+include:
+- suite: spi_test
+  tests:
+  - test_spi_adapter_type_detection
+- suite: cli_tests
+  tests:
+  - test_cli_output_comparison
+  - test_cli_ssh_command_execution

@@ -1,0 +1,34 @@
+suite_info:
+  name: spi_test
+  description: SPI adapter auto-discovery tests
+  default_platforms:
+  - mock_platform
+tests:
+- name: test_spi_auto_discovery
+  category: smoke
+  priority: critical
+  platforms:
+  - mock_platform
+  description: Test SPI adapter auto-discovery and basic functionality
+  requirements_hardware: false
+- name: test_spi_adapter_type_detection
+  category: integration
+  priority: high
+  platforms:
+  - mock_platform
+  description: Test automatic mock adapter selection
+  requirements_hardware: false
+- name: test_spi_configuration_loading
+  category: regression
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test SPI configuration loading from YAML
+  requirements_hardware: false
+- name: test_adapter_info_and_discovery
+  category: regression
+  priority: medium
+  platforms:
+  - mock_platform
+  description: Test HAL adapter discovery features
+  requirements_hardware: false

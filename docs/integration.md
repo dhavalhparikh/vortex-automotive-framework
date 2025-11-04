@@ -69,8 +69,65 @@ company_settings:
 
 Create test suite configuration in the test registry:
 
+#### Split Registry Structure (Recommended)
+
 ```yaml
-# Add to config/test_registry.yaml
+# config/test_registry/suites/company_ecu_tests.yaml
+suite_info:
+  name: "company_ecu_tests"
+  description: "Company ECU specific tests"
+  default_platforms: ["my_company_platform", "mock_platform"]
+
+tests:
+  - name: "test_company_ecu_initialization"
+    category: "smoke"
+    priority: "critical"
+    description: "Test company ECU initialization sequence"
+    platforms: ["my_company_platform"]
+    requirements_hardware: true
+
+  - name: "test_company_protocol_communication"
+    category: "regression"
+    priority: "high"
+    description: "Test proprietary protocol communication"
+    platforms: ["my_company_platform"]
+    requirements_hardware: true
+```
+
+```yaml
+# config/test_registry/suites/company_integration_tests.yaml
+suite_info:
+  name: "company_integration_tests"
+  description: "Company system integration tests"
+  default_platforms: ["my_company_platform"]
+
+tests:
+  - name: "test_end_to_end_workflow"
+    category: "integration"
+    priority: "critical"
+    description: "Test complete company workflow"
+    platforms: ["my_company_platform"]
+```
+
+Create execution profiles for your specific test scenarios:
+
+```yaml
+# config/test_registry/execution/company_smoke.yaml
+execution_profile:
+  name: "company_smoke"
+  description: "Company-specific smoke tests"
+
+include:
+  - suite: "company_ecu_tests"
+    tests: ["test_company_ecu_initialization"]
+    overrides:
+      timeout: 120
+```
+
+#### Legacy Registry Structure
+
+```yaml
+# Add to config/test_registry.yaml (if using legacy format)
 test_suites:
   company_ecu_tests:
     description: "Company ECU specific tests"
@@ -82,23 +139,7 @@ test_suites:
         description: "Test company ECU initialization sequence"
         platforms: ["my_company_platform"]
         requirements_hardware: true
-
-      - name: "test_company_protocol_communication"
-        category: "regression"
-        priority: "high"
-        description: "Test proprietary protocol communication"
-        platforms: ["my_company_platform"]
-        requirements_hardware: true
-
-  company_integration_tests:
-    description: "Company system integration tests"
-    platforms: ["my_company_platform"]
-    tests:
-      - name: "test_end_to_end_workflow"
-        category: "integration"
-        priority: "critical"
-        description: "Test complete company workflow"
-        platforms: ["my_company_platform"]
+      # ... additional tests
 ```
 
 ### 3. Create Your Test Cases
@@ -308,6 +349,9 @@ class CompanyConfigLoader(ConfigLoader):
 Always test with mock platform before using real hardware:
 
 ```bash
+# Test with execution profiles (recommended)
+python run_tests.py --exec-profile company_smoke
+
 # Test with mock platform
 export HARDWARE_PLATFORM=mock_platform
 python run_tests.py --suite company_ecu_tests
@@ -318,7 +362,11 @@ python run_tests.py --suite company_ecu_tests
 Test individual components before full integration:
 
 ```bash
-# Test specific adapter
+# Test specific adapter with execution profile
+export HARDWARE_PLATFORM=my_company_platform
+python run_tests.py --exec-profile company_smoke
+
+# Test specific test function
 export HARDWARE_PLATFORM=my_company_platform
 python run_tests.py tests/suites/company_ecu_tests/test_company_ecu.py::test_company_ecu_initialization
 ```
@@ -328,7 +376,11 @@ python run_tests.py tests/suites/company_ecu_tests/test_company_ecu.py::test_com
 Run full integration tests:
 
 ```bash
-# Run all company tests
+# Run all company tests with execution profile
+export HARDWARE_PLATFORM=my_company_platform
+python run_tests.py --exec-profile company_full
+
+# Run specific suites
 export HARDWARE_PLATFORM=my_company_platform
 python run_tests.py --suite company_ecu_tests --suite company_integration_tests
 ```
@@ -415,6 +467,24 @@ interfaces:
 ```
 
 ### Test Registry
+
+#### Split Registry Structure (Recommended)
+
+```yaml
+# config/test_registry/suites/acme_controller_tests.yaml
+suite_info:
+  name: "acme_controller_tests"
+  description: "ACME controller tests"
+  default_platforms: ["acme_test_bench", "mock_platform"]
+
+tests:
+  - name: "test_acme_initialization"
+    category: "smoke"
+    priority: "critical"
+```
+
+#### Legacy Registry Structure
+
 ```yaml
 # In config/test_registry.yaml
 test_suites:
@@ -438,6 +508,11 @@ def test_acme_initialization(acme_controller_interface):
 
 ### Usage
 ```bash
+# Using execution profiles (recommended)
+export HARDWARE_PLATFORM=acme_test_bench
+python run_tests.py --exec-profile acme_smoke
+
+# Traditional suite testing
 export HARDWARE_PLATFORM=acme_test_bench
 python run_tests.py --suite acme_controller_tests
 ```

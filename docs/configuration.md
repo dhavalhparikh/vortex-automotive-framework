@@ -10,7 +10,19 @@ config/
 │   ├── ecu_platform_a.yaml
 │   ├── ecu_platform_b.yaml
 │   └── mock_platform.yaml
-├── test_registry.yaml           # Test metadata and organization
+├── test_registry/               # Split test registry structure (NEW!)
+│   ├── suites/                  # Test definitions by functionality
+│   │   ├── can_bus.yaml
+│   │   ├── cli_tests.yaml
+│   │   ├── diagnostics.yaml
+│   │   └── system.yaml
+│   ├── execution/               # Execution profiles for different scenarios
+│   │   ├── smoke.yaml
+│   │   ├── hil.yaml
+│   │   ├── regression.yaml
+│   │   └── nightly.yaml
+│   └── _globals.yaml            # Shared configuration
+├── test_registry.yaml           # Legacy test registry (if not migrated)
 └── pytest.ini                   # Pytest configuration
 ```
 
@@ -132,47 +144,70 @@ test_parameters:
 
 ## Test Registry Configuration
 
-The test registry defines test metadata, organization, and execution parameters.
+The test registry defines test metadata, organization, and execution parameters. VORTEX supports both a modern split structure and legacy single-file format.
 
-### Test Registry Structure
+### Split Registry Structure (Recommended)
+
+The split structure separates test definitions from execution profiles for better maintainability.
+
+#### Test Suite Definition
 
 ```yaml
-# config/test_registry.yaml
-test_suites:
-  can_bus:
-    description: "CAN bus communication tests"
-    platforms: ["ecu_platform_a", "ecu_platform_b", "mock_platform"]
-    tests:
-      - name: "test_can_initialization"
-        category: "smoke"
-        priority: "critical"
-        description: "Test CAN interface initialization"
-        platforms: ["all"]
+# config/test_registry/suites/can_bus.yaml
+suite_info:
+  name: "can_bus"
+  description: "CAN bus communication tests"
+  default_platforms: ["ecu_platform_a", "ecu_platform_b", "mock_platform"]
 
-      - name: "test_send_can_message"
-        category: "smoke"
-        priority: "critical"
-        description: "Test sending CAN messages"
-        platforms: ["all"]
+tests:
+  - name: "test_can_initialization"
+    category: "smoke"
+    priority: "critical"
+    description: "Test CAN interface initialization"
+    platforms: ["all"]
 
-      - name: "test_receive_can_message"
-        category: "regression"
-        priority: "high"
-        description: "Test receiving CAN messages"
-        platforms: ["ecu_platform_a", "ecu_platform_b"]
-        requirements_hardware: true
+  - name: "test_send_can_message"
+    category: "smoke"
+    priority: "critical"
+    description: "Test sending CAN messages"
+    platforms: ["all"]
 
-  cli_tests:
-    description: "CLI adapter tests"
-    platforms: ["mock_platform"]
-    tests:
-      - name: "test_cli_execute_command"
-        category: "smoke"
-        priority: "high"
-        description: "Test CLI command execution"
-        requirements_hardware: false
+  - name: "test_receive_can_message"
+    category: "regression"
+    priority: "high"
+    description: "Test receiving CAN messages"
+    platforms: ["ecu_platform_a", "ecu_platform_b"]
+    requirements_hardware: true
+```
 
-# Test Categories
+#### Execution Profile Definition
+
+```yaml
+# config/test_registry/execution/smoke.yaml
+execution_profile:
+  name: "smoke"
+  description: "Critical smoke tests for fast feedback"
+  timeout: 300
+
+include:
+  # Include entire suite
+  - suite: "can_bus"
+    tests: ["test_can_initialization", "test_send_can_message"]
+    overrides:
+      timeout: 60
+      platforms: ["mock_platform"]
+
+  # Include specific tests with overrides
+  - suite: "cli_tests"
+    overrides:
+      requirements_hardware: false
+```
+
+#### Global Configuration
+
+```yaml
+# config/test_registry/_globals.yaml
+# Shared categories, priorities, and defaults
 categories:
   smoke:
     description: "Critical tests that must pass"
@@ -190,7 +225,6 @@ categories:
     description: "Performance and load tests"
     max_duration: "60m"
 
-# Priority Levels
 priorities:
   critical:
     description: "Must-pass tests"
@@ -207,6 +241,57 @@ priorities:
   low:
     description: "Nice-to-have tests"
     weight: 40
+
+defaults:
+  category: "regression"
+  priority: "medium"
+  platforms: ["all"]
+  requirements_hardware: false
+```
+
+### Legacy Registry Structure (Single File)
+
+For backward compatibility, the legacy single-file format is still supported:
+
+```yaml
+# config/test_registry.yaml (legacy format)
+test_suites:
+  can_bus:
+    description: "CAN bus communication tests"
+    platforms: ["ecu_platform_a", "ecu_platform_b", "mock_platform"]
+    tests:
+      - name: "test_can_initialization"
+        category: "smoke"
+        priority: "critical"
+        # ... test configuration
+
+# Categories and priorities defined here
+categories:
+  smoke:
+    description: "Critical tests that must pass"
+    max_duration: "5m"
+  # ...
+
+priorities:
+  critical:
+    description: "Must-pass tests"
+    weight: 100
+  # ...
+```
+
+### Migration from Legacy to Split Structure
+
+Migrate from legacy single file to split structure:
+
+```bash
+# Automatic migration
+python scripts/migrate_registry.py
+
+# Creates:
+# - config/test_registry/suites/*.yaml
+# - config/test_registry/execution/*.yaml
+# - config/test_registry/_globals.yaml
+# - Backup of original file
 ```
 
 ### Test Metadata Fields
@@ -262,9 +347,43 @@ interfaces:
 
 ### Test Suite Configuration
 
-Add new test suite to test registry:
+#### Split Structure (Recommended)
+
+Create a new test suite file:
 
 ```yaml
+# config/test_registry/suites/my_test_suite.yaml
+suite_info:
+  name: "my_test_suite"
+  description: "My custom test suite"
+  default_platforms: ["my_platform", "mock_platform"]
+
+tests:
+  - name: "test_my_functionality"
+    category: "smoke"
+    priority: "high"
+    description: "Test my custom functionality"
+    platforms: ["all"]
+```
+
+Create an execution profile to include your suite:
+
+```yaml
+# config/test_registry/execution/my_profile.yaml
+execution_profile:
+  name: "my_profile"
+  description: "Custom execution profile"
+
+include:
+  - suite: "my_test_suite"
+```
+
+#### Legacy Structure
+
+Add new test suite to existing registry:
+
+```yaml
+# config/test_registry.yaml
 test_suites:
   my_test_suite:
     description: "My custom test suite"
@@ -291,15 +410,23 @@ The framework validates configurations on startup:
 ```bash
 # Invalid YAML syntax
 ERROR: Invalid YAML in config/hardware/my_platform.yaml
+ERROR: Invalid YAML in config/test_registry/suites/my_suite.yaml
 
 # Missing required fields
 ERROR: Platform config missing required field: name
+ERROR: Suite config missing required field: suite_info.name
+ERROR: Execution profile missing required field: execution_profile.name
 
 # Invalid test reference
 ERROR: Test 'test_nonexistent' not found in test suite
+ERROR: Suite 'unknown_suite' referenced in execution profile not found
 
 # Invalid platform reference
 ERROR: Platform 'unknown_platform' not found
+
+# Execution profile errors
+ERROR: Execution profile 'my_profile' not found
+ERROR: No tests found in execution profile 'empty_profile'
 ```
 
 ## Environment Variables
@@ -318,6 +445,10 @@ export VORTEX_LOG_LEVEL=DEBUG
 
 # Test timeout override
 export VORTEX_TEST_TIMEOUT=30
+
+# Execution profile selection (set by CLI)
+export VORTEX_EXECUTION_PROFILE=smoke
+export VORTEX_FILTERED_TESTS=test_can_initialization,test_send_can_message
 ```
 
 ## Configuration Best Practices
@@ -335,10 +466,13 @@ export VORTEX_TEST_TIMEOUT=30
 - Validate device paths exist
 
 ### Test Registry
-- Group related tests in suites
-- Use clear, descriptive names
-- Set appropriate priorities
-- Document hardware requirements
+- **Split Structure**: Use split structure for better maintainability
+- **Suite Organization**: Group related tests by functionality
+- **Execution Profiles**: Create profiles for different test scenarios
+- **Clear Names**: Use descriptive suite and profile names
+- **Priorities**: Set appropriate test priorities
+- **Documentation**: Document hardware requirements and profile purposes
+- **Migration**: Use migration script to convert legacy registries
 
 ### Mock Configurations
 - Mirror real platform structure

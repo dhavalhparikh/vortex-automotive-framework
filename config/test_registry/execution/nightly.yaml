@@ -1,0 +1,11 @@
+execution_profile:
+  name: nightly
+  description: Comprehensive nightly test run
+  timeout: 3600
+include:
+- suite: can_bus
+- suite: mock_adapter
+- suite: spi_test
+- suite: cli_tests
+- suite: diagnostics
+- suite: system

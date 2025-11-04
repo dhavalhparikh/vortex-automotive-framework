@@ -1,0 +1,28 @@
+execution_profile:
+  name: regression
+  description: Full regression test suite
+  timeout: 1800
+include:
+- suite: can_bus
+  tests:
+  - test_receive_can_message
+  - test_add_filter
+- suite: mock_adapter
+- suite: spi_test
+  tests:
+  - test_spi_configuration_loading
+  - test_adapter_info_and_discovery
+- suite: cli_tests
+  tests:
+  - test_cli_mock_response_setting
+  - test_cli_output_comparison_options
+  - test_cli_command_history
+  - test_cli_output_capture
+  - test_cli_buffer_management
+  - test_cli_error_handling
+- suite: diagnostics
+  tests:
+  - test_dtc_reading
+- suite: system
+  tests:
+  - test_power_management

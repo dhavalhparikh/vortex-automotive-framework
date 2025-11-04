@@ -18,7 +18,11 @@ The framework now **automatically discovers** required hardware devices from you
 ### Simple Auto-Testing (Recommended)
 
 ```bash
-# ✅ New way - automatic device discovery
+# ✅ New way - automatic device discovery with execution profiles
+./auto_test.sh my_custom_platform --exec-profile smoke
+./auto_test.sh my_custom_platform --exec-profile hil
+
+# Traditional usage still supported
 ./auto_test.sh my_custom_platform -m smoke
 ./auto_test.sh my_custom_platform tests/suites/cli_tests/
 ```
@@ -26,7 +30,11 @@ The framework now **automatically discovers** required hardware devices from you
 ### Advanced Usage
 
 ```bash
-# Direct auto-mapping
+# Direct auto-mapping with execution profiles
+python scripts/auto_docker.py run --platform my_platform --exec-profile smoke
+python scripts/auto_docker.py run --platform my_platform --exec-profile hil
+
+# Traditional direct auto-mapping
 python scripts/auto_docker.py run --platform my_platform -m smoke
 
 # Generate docker-compose override file
@@ -54,7 +62,14 @@ interfaces:
     type: "mock"  # ← Skipped (no device mapping needed)
 ```
 
-**Generated Docker Command**:
+**Generated Docker Command** (with execution profile):
+```bash
+docker run --device=/dev/ttyUSB8:/dev/ttyUSB8 \
+  -e HARDWARE_PLATFORM=my_platform \
+  automotive-tests --exec-profile smoke
+```
+
+**Generated Docker Command** (traditional):
 ```bash
 docker run --device=/dev/ttyUSB8:/dev/ttyUSB8 \
   -e HARDWARE_PLATFORM=my_platform \
@@ -89,6 +104,10 @@ docker run --device=/dev/ttyUSB8:/dev/ttyUSB8 automotive-tests -m smoke
 
 ### After (Automatic)
 ```bash
+# With execution profiles (recommended)
+./auto_test.sh my_platform --exec-profile smoke
+
+# Traditional usage
 ./auto_test.sh my_platform -m smoke
 ```
 
