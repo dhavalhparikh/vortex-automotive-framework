@@ -286,6 +286,31 @@ def pytest_runtest_makereport(item, call):
             )
 
 
+def pytest_configure(config):
+    """
+    Dynamically register markers from test registry to prevent warnings
+    """
+    try:
+        registry = get_test_registry()
+
+        # Get all unique markers from all tests
+        all_markers = set()
+        for test_metadata in registry._registry.values():
+            test_markers = registry.get_pytest_markers(test_metadata.name)
+            all_markers.update(test_markers)
+
+        # Register all discovered markers
+        for marker in all_markers:
+            config.addinivalue_line(
+                "markers",
+                f"{marker}: Dynamically registered marker from test registry"
+            )
+
+    except Exception as e:
+        # Don't break pytest if registry loading fails
+        logger.warning(f"Failed to register dynamic markers: {e}")
+
+
 def pytest_sessionfinish(session, exitstatus):
     """
     Called after test session finishes.

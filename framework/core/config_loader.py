@@ -9,7 +9,7 @@ import os
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class PlatformConfig(BaseModel):
@@ -22,10 +22,9 @@ class PlatformConfig(BaseModel):
 
 class InterfaceConfig(BaseModel):
     """Base interface configuration"""
+    model_config = ConfigDict(extra="allow")  # Allow additional fields
+
     type: str
-    
-    class Config:
-        extra = "allow"  # Allow additional fields
 
 
 class CANConfig(InterfaceConfig):
