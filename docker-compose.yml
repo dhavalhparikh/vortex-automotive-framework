@@ -7,13 +7,10 @@ services:
       dockerfile: Dockerfile
     container_name: automotive-tests
     
-    # Hardware device access
-    devices:
-      - "/dev/ttyUSB0:/dev/ttyUSB0"  # Serial port
-      - "/dev/can0:/dev/can0"          # CAN interface
-      # Add more devices as needed:
-      # - "/dev/i2c-1:/dev/i2c-1"
-      # - "/dev/spidev0.0:/dev/spidev0.0"
+    # Hardware device access - automatically managed by auto_docker.py
+    # To add custom devices, create docker-compose.override.yml or use:
+    # python scripts/auto_docker.py compose --platform your_platform
+    devices: []  # Will be populated by auto_docker.py or override file
     
     # Required capabilities for network interfaces
     cap_add:
@@ -52,8 +49,12 @@ services:
     profiles:
       - mock  # Only start with: docker-compose --profile mock up
 
-# Usage examples:
+# Usage examples (RECOMMENDED - automatic device mapping):
+# ./auto_test.sh my_platform -m smoke                         # Auto device mapping
+# python scripts/auto_docker.py run --platform my_platform    # Direct auto mapping
+# python scripts/auto_docker.py compose --platform my_platform && docker-compose up
+
+# Usage examples (traditional):
 # docker-compose up                                    # Run smoke tests
 # docker-compose run test-runner -m can_bus           # Run CAN tests
-# docker-compose run test-runner tests/suites/can_bus # Run specific suite
 # HARDWARE_PLATFORM=ecu_platform_b docker-compose up  # Use different platform

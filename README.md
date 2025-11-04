@@ -48,6 +48,18 @@ cd reports && python3 -m http.server 8000
 # Open: http://localhost:8000/report.html
 ```
 
+### Docker Testing (RECOMMENDED)
+
+```bash
+# Auto-discovers hardware devices from platform config - no manual --device mapping!
+./auto_test.sh my_platform -m smoke
+./auto_test.sh custom_cli_platform tests/suites/cli_tests/
+
+# Advanced Docker usage
+python scripts/auto_docker.py run --platform my_platform -m smoke
+python scripts/auto_docker.py compose --platform my_platform && docker-compose up
+```
+
 ### Local Development
 
 ```bash
@@ -58,7 +70,7 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run tests
+# Run tests locally (requires hardware setup)
 python run_tests.py --category smoke
 python run_tests.py --suite can_bus
 ```

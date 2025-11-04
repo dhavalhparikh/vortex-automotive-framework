@@ -1,0 +1,36 @@
+# Custom CLI Platform Configuration
+# Example: Real CLI hardware with mock everything else
+
+platform:
+  name: "Custom CLI Test Platform"
+  version: "1.0"
+  vendor: "Your Company"
+  description: "Real CLI interface with mock adapters for other interfaces"
+
+interfaces:
+  # Real CLI hardware
+  cli:
+    device_path: "/dev/ttyUSB8"  # Your custom device
+    baudrate: 115200
+    timeout: 10.0
+    connection_type: "serial"
+    command_timeout: 30.0
+    prompt_pattern: '[\$#>]\s*$'
+
+  # Mock everything else (optional - only define what you use)
+  can:
+    type: "mock"
+    channel: "vcan0"
+    bitrate: 500000
+
+  spi:
+    type: "mock"
+    device_path: "/dev/spidev0.0"
+
+# Only CLI tests will use real hardware
+# All other tests will use mock adapters automatically
+
+test_parameters:
+  default_timeout: 5.0
+  retry_count: 2
+  log_level: "DEBUG"
