@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class TestMetadataConfig:
+class MetadataConfig:
     """Test metadata from configuration"""
     name: str
     suite: str
@@ -27,7 +27,7 @@ class TestMetadataConfig:
     max_duration: Optional[str] = None
 
 
-class TestRegistryManager:
+class RegistryManager:
     """
     Manages test configuration and metadata.
 
@@ -58,7 +58,7 @@ class TestRegistryManager:
             # Parse test suites
             for suite_name, suite_config in config.get('test_suites', {}).items():
                 for test_config in suite_config.get('tests', []):
-                    test_metadata = TestMetadataConfig(
+                    test_metadata = MetadataConfig(
                         name=test_config['name'],
                         suite=suite_name,
                         category=test_config['category'],
@@ -80,26 +80,26 @@ class TestRegistryManager:
             logger.error(f"Failed to load test registry: {e}")
             raise
 
-    def get_test_metadata(self, test_name: str) -> Optional[TestMetadataConfig]:
+    def get_test_metadata(self, test_name: str) -> Optional[MetadataConfig]:
         """Get metadata for a specific test"""
         return self._registry.get(test_name)
 
-    def get_tests_by_category(self, category: str) -> List[TestMetadataConfig]:
+    def get_tests_by_category(self, category: str) -> List[MetadataConfig]:
         """Get all tests in a specific category"""
         return [test for test in self._registry.values() if test.category == category]
 
-    def get_tests_by_suite(self, suite: str) -> List[TestMetadataConfig]:
+    def get_tests_by_suite(self, suite: str) -> List[MetadataConfig]:
         """Get all tests in a specific suite"""
         return [test for test in self._registry.values() if test.suite == suite]
 
-    def get_tests_by_platform(self, platform: str) -> List[TestMetadataConfig]:
+    def get_tests_by_platform(self, platform: str) -> List[MetadataConfig]:
         """Get all tests compatible with a platform"""
         return [
             test for test in self._registry.values()
             if platform in test.platforms or "all" in test.platforms
         ]
 
-    def get_tests_by_priority(self, priority: str) -> List[TestMetadataConfig]:
+    def get_tests_by_priority(self, priority: str) -> List[MetadataConfig]:
         """Get all tests with specific priority"""
         return [test for test in self._registry.values() if test.priority == priority]
 
@@ -173,9 +173,9 @@ class TestRegistryManager:
 # Global registry instance
 _registry_instance = None
 
-def get_test_registry() -> TestRegistryManager:
+def get_test_registry() -> RegistryManager:
     """Get global test registry instance"""
     global _registry_instance
     if _registry_instance is None:
-        _registry_instance = TestRegistryManager()
+        _registry_instance = RegistryManager()
     return _registry_instance
